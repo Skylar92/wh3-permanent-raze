@@ -1,6 +1,16 @@
 # Raze Forever / Стереть навсегда
 
-A Total War: WARHAMMER III mod. Next to the usual "Raze" option, every culture gets a **Raze Forever** option: the settlement is wiped off the map and the ruins can never be occupied or colonised again — by anyone, the player included. It is the same permanent block Archaon uses on his Lord of the End Times path, made available to every faction.
+> *"Some places should never rise again."*
+
+**Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included. It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
+
+| | |
+|---|---|
+| **Game** | Total War: WARHAMMER III, update 9.0 (Lords of the End Times) |
+| **Cultures** | all, except Nagash's Undead Legions |
+| **Languages** | English + 12 translation patches |
+| **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
+| **Tests** | 75 automated tests (pack/db encoding, generated options, the campaign script) |
 
 *Русская версия ниже.*
 
@@ -49,13 +59,24 @@ python -m tools.build
 - `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
 - `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
-- In-game checks: `docs/ingame-checklist.md`.
+- In-game checks: `docs/ingame-checklist.md`; store page texts: `docs/publish/`.
+
+### Translations
+
+All texts live in [`tools/texts.py`](tools/texts.py). English and Russian are written by the authors; the other languages follow the game's own official wording for "Raze" and "ruins" but have not been proofread by native speakers. Corrections are very welcome — open an issue or a pull request.
+
+## Credits
+
+- [RPFM](https://github.com/Frodo45127/rpfm) and its [schemas](https://github.com/Frodo45127/rpfm-schemas) by Frodo45127 — the table layouts in `schemas/` come from there.
+- Creative Assembly, for Archaon's devastation mechanic this mod borrows.
 
 ---
 
 ## Стереть навсегда (по-русски)
 
-Мод для Total War: WARHAMMER III. Рядом с обычным «Разрушить» у каждой культуры появляется **«Стереть навсегда»**: поселение исчезает с карты, и руины больше никто и никогда не сможет занять или заселить, включая самого игрока. Это тот же вечный запрет, что у Архаона на пути «Повелителя Конца Времён», только для всех фракций.
+> *«Есть места, которым не суждено подняться снова».*
+
+**Конец света теперь не только у Архаона.** Мод для Total War: WARHAMMER III. Рядом с обычным «Разрушить» у каждой культуры появляется **«Стереть навсегда»**: поселение исчезает с карты, и руины больше никто и никогда не сможет занять или заселить, включая самого игрока. Это тот же вечный запрет, что у Архаона на пути «Повелителя Конца Времён», только для всех фракций.
 
 ### Что делает
 
