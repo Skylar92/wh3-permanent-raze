@@ -6,6 +6,7 @@
 
 | | |
 |---|---|
+| **Download** | [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3820765666) · [Nexus Mods](https://www.nexusmods.com/totalwarwarhammer3/mods/413) |
 | **Game** | Total War: WARHAMMER III, update 9.0 (Lords of the End Times) |
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
@@ -30,7 +31,7 @@
 
 ## Install
 
-Subscribe to (or copy into `data/`) **`permanent_raze.pack`** and enable it in the launcher.
+Subscribe on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3820765666), or download from [Nexus Mods](https://www.nexusmods.com/totalwarwarhammer3/mods/413) and copy **`permanent_raze.pack`** into the game's `data` folder. Enable it in the launcher.
 
 Safe to add to a running campaign. **Do not remove it mid-campaign**: saves reference the mod's effect bundle and may fail to load, and erased ruins could become settleable again.
 
@@ -91,7 +92,7 @@ The mod's code, scripts and texts are released under the [MIT License](LICENSE) 
 
 ### Установка
 
-Подпишитесь на мод (или положите **`permanent_raze.pack`** в папку `data`) и включите его в лаунчере.
+Подпишитесь в [Мастерской Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3820765666) или скачайте с [Nexus Mods](https://www.nexusmods.com/totalwarwarhammer3/mods/413) и положите **`permanent_raze.pack`** в папку `data` игры. Включите мод в лаунчере.
 
 Можно добавлять в идущую кампанию. **Не удаляйте мод посреди кампании**: сохранение может не загрузиться, а стёртые руины могут снова стать заселяемыми.
 
