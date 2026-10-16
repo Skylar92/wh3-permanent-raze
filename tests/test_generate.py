@@ -40,7 +40,7 @@ def test_clone_strips_rewards(clones):
                   "acting_army_effect_bundle_turns"):
             assert r[t.col(c)] == 0, c
         assert r[t.col("settlement_option")] == "occupation_decision_raze_without_occupy"
-        assert r[t.col("tooltip")].startswith("Стереть навсегда||")
+        assert r[t.col("tooltip")].startswith("Raze Forever||")
 
 
 def test_clone_keeps_loot_and_captives(clones, vanilla_options):

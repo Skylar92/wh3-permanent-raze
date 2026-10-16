@@ -1,10 +1,10 @@
 """Generate the mod's db rows and localisation from vanilla tables."""
 from tools.dbtable import Table
+from tools.texts import TEXTS
 
 OPTION_ID_BASE = 2100500000
 RAZE_OPTION = "occupation_decision_raze_without_occupy"
-TITLE = "Стереть навсегда"
-DESCRIPTION = "Сравнять поселение с землёй так, что его больше никто и никогда не сможет занять. Это необратимо."
+DEFAULT_LANGUAGE = "en"
 
 # Columns cleared on every clone: faction-specific rewards, costs and timed bundles.
 _CLEARED = (
@@ -21,11 +21,8 @@ _ZEROED = (
 
 ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
 BUNDLE_KEY = "permraze_block_occupation"
-BUNDLE_TITLE = "Стёрто навсегда"
-BUNDLE_DESCRIPTION = "Эти руины уничтожены окончательно. Здесь больше никто не сможет поселиться."
 ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
 EFFECT_KEY = "permraze_effect_block_occupation"
-EFFECT_DESCRIPTION = "Руины стёрты навсегда: регион нельзя занять или заселить"
 FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
 
 
@@ -63,7 +60,7 @@ def make_option_clones(options, criteria):
         for name in _ZEROED:
             clone[options.col(name)] = 0
         clone[options.col("id")] = new_id
-        clone[options.col("tooltip")] = TITLE + "||" + DESCRIPTION
+        clone[options.col("tooltip")] = _tooltip(DEFAULT_LANGUAGE)
         new_options.rows.append(clone)
         for crit in criteria.rows:
             if crit[crit_option] == source[options.col("id")]:
@@ -81,8 +78,8 @@ def make_bundle_tables(bundles, junctions):
         if row[bundles.col("key")] == ARCHAON_BUNDLE_KEY:
             clone = list(row)
             clone[bundles.col("key")] = BUNDLE_KEY
-            clone[bundles.col("localised_title")] = BUNDLE_TITLE
-            clone[bundles.col("localised_description")] = BUNDLE_DESCRIPTION
+            clone[bundles.col("localised_title")] = TEXTS[DEFAULT_LANGUAGE]["bundle_title"]
+            clone[bundles.col("localised_description")] = TEXTS[DEFAULT_LANGUAGE]["bundle_description"]
             new_bundles.rows.append(clone)
     for row in junctions.rows:
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
@@ -105,12 +102,16 @@ def make_effect_tables(effects, bonus_values):
     return new_effects, new_bonus
 
 
-def make_loc(option_ids):
-    entries = [("culture_settlement_occupation_options_tooltip_%d" % i, TITLE + "||" + DESCRIPTION)
-               for i in option_ids]
-    entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, BUNDLE_TITLE))
-    entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, BUNDLE_DESCRIPTION))
-    entries.append(("effects_description_" + EFFECT_KEY, EFFECT_DESCRIPTION))
+def _tooltip(lang):
+    return TEXTS[lang]["title"] + "||" + TEXTS[lang]["description"]
+
+
+def make_loc(option_ids, lang=DEFAULT_LANGUAGE):
+    texts = TEXTS[lang]
+    entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(lang)) for i in option_ids]
+    entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
+    entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))
+    entries.append(("effects_description_" + EFFECT_KEY, texts["effect_description"]))
     return entries
 
 

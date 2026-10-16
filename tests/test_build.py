@@ -1,6 +1,6 @@
 import pytest
 
-from tools.build import build
+from tools.build import build, build_language_patch
 from tools.dbtable import decode_table
 from tools.loc import decode_loc
 from tools.packfile import read_pack
@@ -43,3 +43,18 @@ def test_loc_has_every_option(built):
 def test_script_has_all_ids(built):
     lua = built["script/campaign/mod/permraze.lua"].decode("utf-8")
     assert "--@@" not in lua and '["2100500048"] = true' in lua and '["wh_main_chs_chaos"] = true' in lua
+
+
+def test_main_loc_is_english(built):
+    keys = dict(decode_loc(built["text/db/permanent_raze.loc"]))
+    assert keys["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Raze Forever||")
+
+
+@pytest.mark.parametrize("lang", ["ru", "ge", "fr", "it", "sp", "pl", "cz", "tr", "br", "kr", "cn", "zh"])
+def test_language_patch(built, tmp_path, lang):
+    out = tmp_path / f"permanent_raze_{lang}.pack"
+    build_language_patch(lang, out)
+    patch = read_pack(out)
+    assert list(patch) == [f"text/db/!permraze_{lang}.loc"]
+    keys = dict(decode_loc(patch[f"text/db/!permraze_{lang}.loc"]))
+    assert set(keys) == set(dict(decode_loc(built["text/db/permanent_raze.loc"])))

@@ -9,13 +9,13 @@ def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     assert BUNDLE_KEY == "permraze_block_occupation"
     assert [r[b.col("key")] for r in b.rows] == ["permraze_block_occupation"]
     assert b.rows[0][b.col("bundle_target")] == "region"
-    assert b.rows[0][b.col("localised_title")] == "Стёрто навсегда"
+    assert b.rows[0][b.col("localised_title")] == "Erased Forever"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")]) for r in j.rows] == \
            [("permraze_block_occupation", "permraze_effect_block_occupation", "region_to_region_own")]
 
 
-def test_loc_keys():
-    loc = dict(make_loc([2100500000]))
+def test_loc_keys_russian():
+    loc = dict(make_loc([2100500000], "ru"))
     assert loc["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Стереть навсегда||")
     assert loc["effect_bundles_localised_title_permraze_block_occupation"] == "Стёрто навсегда"
     assert loc["effect_bundles_localised_description_permraze_block_occupation"] == \
@@ -35,3 +35,9 @@ def test_own_effect_with_same_bonus(vanilla_effects, vanilla_effect_bonus):
     e, bonus = make_effect_tables(vanilla_effects, vanilla_effect_bonus)
     assert [(r[e.col("effect")], r[e.col("icon")]) for r in e.rows] ==            [("permraze_effect_block_occupation", "blocked_ruins.png")]
     assert [(r[bonus.col("effect")], r[bonus.col("bonus_value_id")]) for r in bonus.rows] ==            [("permraze_effect_block_occupation", "block_region_occupation")]
+
+
+def test_loc_defaults_to_english():
+    loc = dict(make_loc([2100500000]))
+    assert loc["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Raze Forever||")
+    assert loc["effects_description_permraze_effect_block_occupation"] ==            "Ruins erased forever: this region cannot be occupied or colonised"
