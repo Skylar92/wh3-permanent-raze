@@ -45,12 +45,13 @@ def test_script_has_all_ids(built):
     assert "--@@" not in lua and '["2100500047"] = true' in lua and '["wh3_dlc23_chd_chaos_dwarfs"] = "wh_main_chs_chaos"' in lua
 
 
-def test_main_loc_is_english(built):
+def test_main_loc_uses_vanilla_translations(built):
     keys = dict(decode_loc(built["text/db/permanent_raze.loc"]))
-    assert keys["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Raze Forever||")
+    assert keys["culture_settlement_occupation_options_tooltip_2100500000"].startswith(
+        "{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}")
 
 
-@pytest.mark.parametrize("lang", ["ru", "ge", "fr", "it", "sp", "pl", "cz", "tr", "br", "kr", "cn", "zh"])
+@pytest.mark.parametrize("lang", ["en", "ru", "ge", "fr", "it", "sp", "pl", "cz", "tr", "br", "kr", "cn", "zh"])
 def test_language_patch(built, tmp_path, lang):
     out = tmp_path / f"permanent_raze_{lang}.pack"
     build_language_patch(lang, out)

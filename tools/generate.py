@@ -1,10 +1,9 @@
 """Generate the mod's db rows and localisation from vanilla tables."""
 from tools.dbtable import Table
-from tools.texts import TEXTS
+from tools.texts import TEXTS, VANILLA_TEXTS
 
 OPTION_ID_BASE = 2100500000
 RAZE_OPTION = "occupation_decision_raze_without_occupy"
-DEFAULT_LANGUAGE = "en"
 # Option groups that get no "raze forever" button: Nagash's Undead Legions devastate everything anyway.
 EXCLUDED_GROUPS = frozenset({
     "wh3_dlc29_sc_nag_undead_legions_occupation_decision_raze_without_occupy",
@@ -63,7 +62,7 @@ def make_option_clones(options, criteria):
         for name in _ZEROED:
             clone[options.col(name)] = 0
         clone[options.col("id")] = new_id
-        clone[options.col("tooltip")] = _tooltip(DEFAULT_LANGUAGE)
+        clone[options.col("tooltip")] = _tooltip(VANILLA_TEXTS)
         new_options.rows.append(clone)
         for crit in criteria.rows:
             if crit[crit_option] == source[options.col("id")]:
@@ -81,8 +80,8 @@ def make_bundle_tables(bundles, junctions):
         if row[bundles.col("key")] == ARCHAON_BUNDLE_KEY:
             clone = list(row)
             clone[bundles.col("key")] = BUNDLE_KEY
-            clone[bundles.col("localised_title")] = TEXTS[DEFAULT_LANGUAGE]["bundle_title"]
-            clone[bundles.col("localised_description")] = TEXTS[DEFAULT_LANGUAGE]["bundle_description"]
+            clone[bundles.col("localised_title")] = VANILLA_TEXTS["bundle_title"]
+            clone[bundles.col("localised_description")] = VANILLA_TEXTS["bundle_description"]
             new_bundles.rows.append(clone)
     for row in junctions.rows:
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
@@ -105,13 +104,14 @@ def make_effect_tables(effects, bonus_values):
     return new_effects, new_bonus
 
 
-def _tooltip(lang):
-    return TEXTS[lang]["title"] + "||" + TEXTS[lang]["description"]
+def _tooltip(texts):
+    return texts["title"] + "||" + texts["description"]
 
 
-def make_loc(option_ids, lang=DEFAULT_LANGUAGE):
-    texts = TEXTS[lang]
-    entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(lang)) for i in option_ids]
+def make_loc(option_ids, lang=None):
+    """Loc entries: vanilla-composite texts for the main pack, or a language's full texts for its patch."""
+    texts = TEXTS[lang] if lang else VANILLA_TEXTS
+    entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(texts)) for i in option_ids]
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))
     entries.append(("effects_description_" + EFFECT_KEY, texts["effect_description"]))

@@ -4,6 +4,7 @@
 
 | Код | Язык | Название страницы |
 |-----|------|-------------------|
+| en | English | Raze Forever — English |
 | ru | Русский | Стереть навсегда — русский |
 | ge | Deutsch | Raze Forever — Deutsch |
 | fr | Français | Raze Forever — Français |
@@ -21,7 +22,7 @@
 
 ```
 [h1]Raze Forever — <LANGUAGE>[/h1]
-<LANGUAGE> texts for [b]Raze Forever[/b]. This is a translation only: enable it together with the main mod.
+Full <LANGUAGE> texts for [b]Raze Forever[/b]: the option is called "Raze Forever" with a detailed tooltip. Optional — the main mod already works in every game language. Enable it together with the main mod.
 
 Requires: Raze Forever (main mod).
 ```

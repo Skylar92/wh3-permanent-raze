@@ -41,7 +41,7 @@ def test_clone_strips_rewards(clones):
                   "acting_army_effect_bundle_turns"):
             assert r[t.col(c)] == 0, c
         assert r[t.col("settlement_option")] == "occupation_decision_raze_without_occupy"
-        assert r[t.col("tooltip")].startswith("Raze Forever||")
+        assert r[t.col("tooltip")].startswith("{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}")
 
 
 def test_clone_keeps_loot_and_captives(clones, vanilla_options):

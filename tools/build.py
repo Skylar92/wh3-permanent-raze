@@ -2,8 +2,8 @@
 
 usage: python -m tools.build [--install [--lang ru]]
 
-Writes dist/permanent_raze.pack (English texts) and one dist/permanent_raze_<lang>.pack
-translation patch per other game language. --install copies the main pack and the
+Writes dist/permanent_raze.pack (texts composed from the game's own translations) and one
+dist/permanent_raze_<lang>.pack translation patch per game language. --install copies the main pack and the
 patch for --lang (default ru), with their preview images, into the game's data folder.
 """
 import shutil
@@ -76,14 +76,13 @@ def main(argv):
     built = [dist / PACK_NAME]
     build(built[0])
     for lang in LANGUAGES:
-        if lang != "en":
-            built.append(dist / patch_name(lang))
-            build_language_patch(lang, built[-1])
+        built.append(dist / patch_name(lang))
+        build_language_patch(lang, built[-1])
     print("built %d packs in %s" % (len(built), dist))
     write_previews()
     if "--install" in argv:
         lang = argv[argv.index("--lang") + 1] if "--lang" in argv else "ru"
-        for name in [PACK_NAME] + ([patch_name(lang)] if lang != "en" else []):
+        for name in (PACK_NAME, patch_name(lang)):
             for file_name in (name, name.replace(".pack", ".png")):  # the launcher wants the preview next to the pack
                 shutil.copyfile(dist / file_name, GAME_DATA / file_name)
                 print("installed %s" % (GAME_DATA / file_name))

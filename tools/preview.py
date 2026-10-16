@@ -20,7 +20,7 @@ FONT_BADGE_CJK = {
 INK = (9, 6, 5, 255)
 
 LANGUAGE_NAMES = {
-    "ru": "Русский", "ge": "Deutsch", "fr": "Français", "it": "Italiano", "sp": "Español",
+    "en": "English", "ru": "Русский", "ge": "Deutsch", "fr": "Français", "it": "Italiano", "sp": "Español",
     "pl": "Polski", "cz": "Čeština", "tr": "Türkçe", "br": "Português (BR)", "kr": "한국어",
     "cn": "简体中文", "zh": "繁體中文",
 }

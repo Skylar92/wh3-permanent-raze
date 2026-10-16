@@ -19,3 +19,9 @@ def test_badge_fonts_cover_cjk():
     assert badge_font_path("简体中文").endswith("msyhbd.ttc")
     assert badge_font_path("繁體中文").endswith("msjhbd.ttc")
     assert badge_font_path("Русский").endswith("seguisb.ttf")
+
+
+def test_every_patch_language_has_a_badge():
+    from tools.preview import LANGUAGE_NAMES
+    from tools.texts import LANGUAGES
+    assert set(LANGUAGE_NAMES) == set(LANGUAGES)

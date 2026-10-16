@@ -9,7 +9,7 @@ def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     assert BUNDLE_KEY == "permraze_block_occupation"
     assert [r[b.col("key")] for r in b.rows] == ["permraze_block_occupation"]
     assert b.rows[0][b.col("bundle_target")] == "region"
-    assert b.rows[0][b.col("localised_title")] == "Erased Forever"
+    assert b.rows[0][b.col("localised_title")] == "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")]) for r in j.rows] == \
            [("permraze_block_occupation", "permraze_effect_block_occupation", "region_to_region_own")]
 
@@ -43,7 +43,15 @@ def test_own_effect_with_same_bonus(vanilla_effects, vanilla_effect_bonus):
     assert [(r[bonus.col("effect")], r[bonus.col("bonus_value_id")]) for r in bonus.rows] ==            [("permraze_effect_block_occupation", "block_region_occupation")]
 
 
-def test_loc_defaults_to_english():
+def test_loc_defaults_to_vanilla_composites():
     loc = dict(make_loc([2100500000]))
+    assert loc["culture_settlement_occupation_options_tooltip_2100500000"] == (
+        "{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}: "
+        "{{tr:effect_bundles_localised_title_wh2_dlc11_noctilus_war_raiding}}"
+        "||{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}")
+    assert loc["effects_description_permraze_effect_block_occupation"] ==            "{{tr:effects_description_wh3_main_effect_endgame_block_occupation}}"
+
+
+def test_loc_english_patch():
+    loc = dict(make_loc([2100500000], "en"))
     assert loc["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Raze Forever||")
-    assert loc["effects_description_permraze_effect_block_occupation"] ==            "Ruins erased forever: this region cannot be occupied or colonised"
