@@ -45,8 +45,32 @@ make_region = function(key)
 	}
 end
 
+local FACTIONS = {
+	wh_main_emp_empire = { culture = "wh_main_emp_empire" },
+	wh2_main_skv_clan_mors = { culture = "wh2_main_skv_skaven" },
+	wh_main_chs_chaos = { culture = "wh_main_chs_chaos" },
+	wh3_main_kho_vassal = { culture = "wh3_main_kho_khorne", master = "wh_main_chs_chaos" },
+}
+
+local function null_interface() return { is_null_interface = function() return true end } end
+
+function make_faction(key)
+	local data = FACTIONS[key]
+	if not data then return false end
+	return {
+		name = function() return key end,
+		culture = function() return data.culture end,
+		is_null_interface = function() return false end,
+		master = function()
+			if data.master then return make_faction(data.master) end
+			return null_interface()
+		end,
+	}
+end
+
 cm = {}
 function cm:get_region(key) return make_region(key) end
+function cm:get_faction(key) return make_faction(key) end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end
 function cm:apply_effect_bundle_to_region(b, r, t) rec("apply_effect_bundle_to_region", b, r, t) end
 function cm:reset_settlement_type(s, t, l) rec("reset_settlement_type", s.region_key, t, l) end

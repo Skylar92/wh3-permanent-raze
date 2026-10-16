@@ -23,8 +23,8 @@ local SAVE_KEY = "permraze"
 
 local function new_state()
 	return {
-		pending = {},              -- [region_key] = culture_key: our option chosen, raze not seen yet
-		razed = {},                -- [region_key] = culture_key: human raze seen, decision not seen yet
+		pending = {},              -- [region_key] = faction_key: our option chosen, raze not seen yet
+		razed = {},                -- [region_key] = faction_key: human raze seen, decision not seen yet
 		erased = {},               -- [region_key] = true
 		devastated_provinces = {}, -- [province_key] = true
 	}
@@ -35,26 +35,26 @@ permraze = {
 }
 
 -- Both events happen in the same occupation, in an order we do not rely on.
-function permraze:on_decision(option_id, is_human, region_key, culture_key)
+function permraze:on_decision(option_id, is_human, region_key, faction_key)
 	if not OPTION_IDS[option_id] or not is_human then
 		return
 	end
 
 	if self.persistent.razed[region_key] then
 		self.persistent.razed[region_key] = nil
-		self:erase_region(region_key, culture_key)
+		self:erase_region(region_key, faction_key)
 	else
-		self.persistent.pending[region_key] = culture_key
+		self.persistent.pending[region_key] = faction_key
 	end
 end
 
-function permraze:on_razed(region_key, culture_key)
-	local pending_culture = self.persistent.pending[region_key]
-	if pending_culture then
+function permraze:on_razed(region_key, faction_key)
+	local pending_faction = self.persistent.pending[region_key]
+	if pending_faction then
 		self.persistent.pending[region_key] = nil
-		self:erase_region(region_key, pending_culture)
+		self:erase_region(region_key, pending_faction)
 	else
-		self.persistent.razed[region_key] = culture_key
+		self.persistent.razed[region_key] = faction_key
 	end
 end
 
@@ -63,7 +63,7 @@ function permraze:clear_turn_state()
 	self.persistent.razed = {}
 end
 
-function permraze:erase_region(region_key, culture_key)
+function permraze:erase_region(region_key, faction_key)
 	local settlement = cm:get_region(region_key):settlement()
 
 	cm:cai_disable_targeting_against_settlement("settlement:" .. region_key)
@@ -74,7 +74,29 @@ function permraze:erase_region(region_key, culture_key)
 	self.persistent.erased[region_key] = true
 	out("Permanent Raze: erased " .. region_key)
 
-	self:maybe_devastate_province(region_key, culture_key)
+	local faction = cm:get_faction(faction_key)
+	if not faction or faction:is_null_interface() then
+		return
+	end
+
+	-- On Archaon's Destroyer path his own script devastates the province and counts it
+	-- toward his bonuses and long victory; doing it first would make him skip it.
+	if self:archaon_devastates_for(faction) then
+		return
+	end
+
+	self:maybe_devastate_province(region_key, faction:culture())
+end
+
+function permraze:archaon_devastates_for(faction)
+	if type(archaon_narrative) ~= "table" or type(archaon_narrative.persistent) ~= "table" then
+		return false
+	end
+	local destroyer_key = archaon_narrative.config.mission_data.long_victory_mission.main_objective_options.option_2.key
+	if archaon_narrative.persistent.long_victory_condition_chosen_option_key ~= destroyer_key then
+		return false
+	end
+	return archaon_narrative:is_archaon_or_archaon_vassal(faction)
 end
 
 function permraze:maybe_devastate_province(region_key, culture_key)
@@ -133,7 +155,7 @@ function permraze:init()
 				tostring(context:occupation_decision()),
 				faction:is_human(),
 				context:garrison_residence():region():name(),
-				faction:culture()
+				faction:name()
 			)
 		end,
 		true
@@ -148,7 +170,7 @@ function permraze:init()
 		function(context)
 			self:on_razed(
 				context:garrison_residence():region():name(),
-				context:character():faction():culture()
+				context:character():faction():name()
 			)
 		end,
 		true

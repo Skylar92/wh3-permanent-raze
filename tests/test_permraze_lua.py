@@ -10,6 +10,22 @@ TEMPLATE = (ROOT / "src/script/campaign/mod/permraze.lua").read_text(encoding="u
 MOCK = (ROOT / "tests/lua/mock_game.lua").read_text(encoding="utf-8")
 OUR_ID = "2100500000"
 EMPIRE, SKAVEN = "wh_main_emp_empire", "wh2_main_skv_skaven"
+ARCHAON, ARCHAON_VASSAL = "wh_main_chs_chaos", "wh3_main_kho_vassal"
+SKAVEN_FACTION = "wh2_main_skv_clan_mors"
+
+# Same shape as the vanilla archaon_narrative this mod defers to.
+ARCHAON_NARRATIVE = """
+archaon_narrative = {
+    config = { archaon_faction_key = "wh_main_chs_chaos",
+               mission_data = { long_victory_mission = { main_objective_options = {
+                   option_1 = { key = "conqueror" }, option_2 = { key = "destroyer" } } } } },
+    persistent = { long_victory_condition_chosen_option_key = %s },
+}
+function archaon_narrative:is_archaon_or_archaon_vassal(faction)
+    local master = faction:master()
+    return faction:name() == "wh_main_chs_chaos" or (not master:is_null_interface() and master:name() == "wh_main_chs_chaos")
+end
+"""
 
 
 @pytest.fixture
@@ -26,13 +42,17 @@ def calls(g):
     return [tuple(c[i] for i in range(1, len(c) + 1)) for c in g.CALLS.values()]
 
 
-def decide(g, region, option=OUR_ID, human=True, culture=EMPIRE):
-    g.permraze.on_decision(g.permraze, option, human, region, culture)
+def decide(g, region, option=OUR_ID, human=True, faction=EMPIRE):
+    g.permraze.on_decision(g.permraze, option, human, region, faction)
 
 
-def raze(g, region, culture=EMPIRE):
+def raze(g, region, faction=EMPIRE):
     g.ABANDONED[region] = True
-    g.permraze.on_razed(g.permraze, region, culture)
+    g.permraze.on_razed(g.permraze, region, faction)
+
+
+def activations(g):
+    return [c for c in calls(g) if c[0] == "activate_campaign_map_event_area"]
 
 
 ERASE_R1 = [
@@ -133,7 +153,8 @@ def test_load_without_saved_state(g):
 
 CONTEXTS = """
 function make_context(option, human, region, culture)
-    local faction = { is_human = function() return human end, culture = function() return culture end }
+    local faction = { is_human = function() return human end, culture = function() return culture end,
+                      name = function() return culture end }
     local character = { faction = function() return faction end }
     local residence = { region = function() return cm:get_region(region) end }
     return {
@@ -161,3 +182,31 @@ def test_ai_razed_listener_ignored(g):
     g.lua.execute(CONTEXTS)
     g.fire("CharacterRazedSettlement", g.make_context(int(OUR_ID), False, "r1", EMPIRE))
     assert g.permraze.persistent.razed["r1"] is None
+
+
+@pytest.mark.parametrize("faction", [ARCHAON, ARCHAON_VASSAL])
+def test_archaon_destroyer_province_left_to_archaon(g, faction):
+    g.lua.execute(ARCHAON_NARRATIVE % '"destroyer"')
+    for r in ("r1", "r2", "r3"):
+        decide(g, r, faction=faction); raze(g, r, faction=faction)
+    assert ("apply_effect_bundle_to_region", "permraze_block_occupation", "r1", 0) in calls(g)
+    assert activations(g) == []
+
+
+def test_archaon_conqueror_path_devastates_normally(g):
+    g.lua.execute(ARCHAON_NARRATIVE % '"conqueror"')
+    for r in ("r1", "r2"):
+        decide(g, r, faction=ARCHAON); raze(g, r, faction=ARCHAON)
+    assert activations(g) == [("activate_campaign_map_event_area", "area_p1", "wh_main_chs_chaos")]
+
+
+def test_other_faction_devastates_while_archaon_is_destroyer(g):
+    g.lua.execute(ARCHAON_NARRATIVE % '"destroyer"')
+    for r in ("r1", "r2"):
+        decide(g, r, faction=SKAVEN_FACTION); raze(g, r, faction=SKAVEN_FACTION)
+    assert activations(g) == [("activate_campaign_map_event_area", "area_p1", "wh2_main_skv_skaven")]
+
+
+def test_unknown_faction_still_erases_region(g):
+    decide(g, "r1", faction="no_such_faction"); raze(g, "r1", faction="no_such_faction")
+    assert calls(g)[:4] == ERASE_R1
