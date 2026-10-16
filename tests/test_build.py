@@ -8,8 +8,8 @@ from tools.packfile import read_pack
 pytestmark = pytest.mark.game
 
 TABLES = {
-    "culture_settlement_occupation_options_tables": 50,
-    "campaign_group_member_criteria_culture_settlement_occupation_options_tables": 2,
+    "culture_settlement_occupation_options_tables": 49,
+    "campaign_group_member_criteria_culture_settlement_occupation_options_tables": 1,
     "effect_bundles_tables": 1,
     "effect_bundles_to_effects_junctions_tables": 1,
 }
@@ -34,10 +34,10 @@ def test_tables_decode_back(built, schema, name, rows):
 
 def test_loc_has_every_option(built):
     keys = dict(decode_loc(built["text/db/permanent_raze.loc"]))
-    assert len(keys) == 52
-    assert "culture_settlement_occupation_options_tooltip_2100500049" in keys
+    assert len(keys) == 51
+    assert "culture_settlement_occupation_options_tooltip_2100500048" in keys
 
 
 def test_script_has_all_ids(built):
     lua = built["script/campaign/mod/permraze.lua"].decode("utf-8")
-    assert "--@@" not in lua and '["2100500049"] = true' in lua and '["wh_main_chs_chaos"] = true' in lua
+    assert "--@@" not in lua and '["2100500048"] = true' in lua and '["wh_main_chs_chaos"] = true' in lua

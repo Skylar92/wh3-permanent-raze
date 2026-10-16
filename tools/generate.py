@@ -31,11 +31,20 @@ def _empty_like(table):
 
 
 def select_sources(options):
-    """Vanilla raze rows to clone; drop resource-gated rows when their group has a free one."""
-    raze = [r for r in options.rows if r[options.col("settlement_option")] == RAZE_OPTION]
-    group, required = options.col("group"), options.col("required_resources")
-    free_groups = {r[group] for r in raze if not r[required]}
-    return [r for r in raze if not (r[required] and r[group] in free_groups)]
+    """One vanilla raze row per option group: prefer rows without a resource cost, then the lowest id.
+
+    Rows sharing a group are shown side by side (Khorne's two rites, Beastmen's two raze styles),
+    so cloning more than one would give the player two "raze forever" buttons.
+    """
+    group, required, row_id = options.col("group"), options.col("required_resources"), options.col("id")
+    best = {}
+    for r in options.rows:
+        if r[options.col("settlement_option")] != RAZE_OPTION:
+            continue
+        rank = (bool(r[required]), r[row_id])
+        if r[group] not in best or rank < best[r[group]][0]:
+            best[r[group]] = (rank, r)
+    return [r for _, r in sorted(best.values(), key=lambda item: item[0][1])]
 
 
 def make_option_clones(options, criteria):

@@ -14,9 +14,9 @@ def clones(vanilla_options, vanilla_criteria):
 
 
 def test_clone_count(clones):
-    # 51 vanilla raze rows minus Khorne's "Blood for the Blood God" (needs a resource)
-    assert len(clones.ids) == 50
-    assert clones.ids == list(range(2100500000, 2100500050))
+    # one clone per raze group: 51 vanilla raze rows in 49 groups (Khorne and Beastmen have two each)
+    assert len(clones.ids) == 49
+    assert clones.ids == list(range(2100500000, 2100500049))
     assert [r[clones.options.col("id")] for r in clones.options.rows] == clones.ids
 
 
@@ -52,10 +52,15 @@ def test_clone_keeps_loot_and_captives(clones, vanilla_options):
         assert clone[t.col(c)] == src[v.col(c)], c
 
 
+def test_one_clone_per_group(clones):
+    groups = [r[clones.options.col("group")] for r in clones.options.rows]
+    assert len(groups) == len(set(groups))
+
+
 def test_beastmen_criteria_copied(clones):
     t = clones.criteria
     members = sorted(r[t.col("member")] for r in t.rows)
-    assert members == ["wh2_dlc17_raze_option_beastmen_1", "wh2_dlc17_raze_option_beastmen_2"]
+    assert members == ["wh2_dlc17_raze_option_beastmen_2"]  # source row 411, lowest id in the group
     assert {r[t.col("culture_settlement_occupation_option")] for r in t.rows} <= set(clones.ids)
 
 
