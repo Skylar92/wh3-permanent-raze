@@ -6,13 +6,14 @@
 --	player picks it, the ruins are blocked for everyone the same way Archaon's
 --	Lord of the End Times path does it, and once more than half of a province
 --	is in ruins the province gets the campaign devastation visuals, but only
---	for cultures the game gives their own look (Chaos, Beastmen, Norsca,
---	Daemons, Skaven, Vampires). No corruption, no climate change, no bonuses.
+--	for cultures that have a devastation look (Chaos, Beastmen, Norsca,
+--	Daemons, Chaos Dwarfs, Skaven, Vampires, Vampire Coast). No corruption,
+--	no climate change, no bonuses.
 --
 ------------------------------------------------------------------------------
 
--- Filled in by tools/build.py: our occupation option ids and the cultures
--- that have their own devastation look.
+-- Filled in by tools/build.py: our occupation option ids, and for each culture
+-- that scorches the land the culture whose devastation look it uses.
 local OPTION_IDS = {} --@@OPTION_IDS@@
 local LOOK_CULTURES = {} --@@LOOK_CULTURES@@
 
@@ -104,7 +105,8 @@ function permraze:maybe_devastate_province(region_key, culture_key)
 	local province = region:province()
 	local province_key = province:key()
 
-	if self.persistent.devastated_provinces[province_key] or not self:has_look(culture_key) then
+	local look = self:look_for(culture_key)
+	if self.persistent.devastated_provinces[province_key] or not look then
 		return false
 	end
 
@@ -131,16 +133,16 @@ function permraze:maybe_devastate_province(region_key, culture_key)
 		return false
 	end
 
-	cm:activate_campaign_map_event_area(event_area_key, culture_key)
+	cm:activate_campaign_map_event_area(event_area_key, look)
 	self.persistent.devastated_provinces[province_key] = true
 	out("Permanent Raze: devastated province " .. province_key)
 	return true
 end
 
--- Only cultures with their own devastation look scorch the land; Bretonnia
--- razing a province should not turn it into a Chaos wasteland.
-function permraze:has_look(culture_key)
-	return LOOK_CULTURES[culture_key] == true
+-- Only cultures with a devastation look scorch the land; Bretonnia razing a
+-- province should not turn it into a Chaos wasteland. Returns nil for them.
+function permraze:look_for(culture_key)
+	return LOOK_CULTURES[culture_key]
 end
 
 function permraze:init()

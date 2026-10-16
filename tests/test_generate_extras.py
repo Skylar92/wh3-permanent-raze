@@ -1,6 +1,6 @@
 import pytest
 
-from tools.generate import BUNDLE_KEY, EFFECT_KEY, cultures_with_look, make_bundle_tables, make_effect_tables, make_loc
+from tools.generate import BUNDLE_KEY, EFFECT_KEY, devastation_looks, make_bundle_tables, make_effect_tables, make_loc
 
 
 @pytest.mark.game
@@ -23,10 +23,15 @@ def test_loc_keys_russian():
 
 
 @pytest.mark.game
-def test_cultures_with_look(vanilla_cultures):
-    looks = cultures_with_look(vanilla_cultures)
-    assert {"wh_main_chs_chaos", "wh_dlc03_bst_beastmen", "wh2_main_skv_skaven",
-            "wh_main_vmp_vampire_counts"} <= set(looks)
+def test_devastation_looks(vanilla_cultures):
+    looks = devastation_looks(vanilla_cultures)
+    assert looks["wh_main_chs_chaos"] == "wh_main_chs_chaos"
+    assert looks["wh_dlc03_bst_beastmen"] == "wh_dlc03_bst_beastmen"
+    assert looks["wh2_main_skv_skaven"] == "wh2_main_skv_skaven"
+    assert looks["wh_main_vmp_vampire_counts"] == "wh_main_vmp_vampire_counts"
+    # borrowed looks, author's call: Chaos Dwarfs scorch like Chaos, Vampire Coast like Nagash
+    assert looks["wh3_dlc23_chd_chaos_dwarfs"] == "wh_main_chs_chaos"
+    assert looks["wh2_dlc11_cst_vampire_coast"] == "wh_main_vmp_vampire_counts"
     assert "wh_main_emp_empire" not in looks and "wh_main_brt_bretonnia" not in looks
 
 

@@ -10,7 +10,7 @@ import shutil
 import sys
 
 from tools.dbtable import decode_table, encode_table, load_schema
-from tools.generate import (cultures_with_look, make_bundle_tables, make_effect_tables, make_loc,
+from tools.generate import (devastation_looks, make_bundle_tables, make_effect_tables, make_loc,
                             make_option_clones)
 from tools.loc import encode_loc
 from tools.packfile import read_pack, write_pack
@@ -51,7 +51,7 @@ def build(out_path):
     files = {f"db/{t.name}/{TABLE_FILE}": encode_table(schema, t)
              for t in (options, criteria, bundles, junctions, effects, effect_bonus)}
     files[f"text/db/{TABLE_FILE}.loc"] = encode_loc(make_loc(ids))
-    files[SCRIPT_PATH] = render_script(template, ids, cultures_with_look(table(CULTURES))).encode("utf-8")
+    files[SCRIPT_PATH] = render_script(template, ids, devastation_looks(table(CULTURES))).encode("utf-8")
     write_pack(out_path, files)
     return files
 

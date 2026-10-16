@@ -42,7 +42,7 @@ def test_loc_has_every_option(built):
 
 def test_script_has_all_ids(built):
     lua = built["script/campaign/mod/permraze.lua"].decode("utf-8")
-    assert "--@@" not in lua and '["2100500047"] = true' in lua and '["wh_main_chs_chaos"] = true' in lua
+    assert "--@@" not in lua and '["2100500047"] = true' in lua and '["wh3_dlc23_chd_chaos_dwarfs"] = "wh_main_chs_chaos"' in lua
 
 
 def test_main_loc_is_english(built):

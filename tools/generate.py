@@ -118,7 +118,17 @@ def make_loc(option_ids, lang=DEFAULT_LANGUAGE):
     return entries
 
 
-def cultures_with_look(cultures):
-    """Culture keys that have their own campaign devastation look."""
+# Cultures without their own devastation look that borrow one (author's call):
+# Chaos Dwarfs scorch the land like Chaos, the Vampire Coast leaves Nagash's dead land.
+BORROWED_LOOKS = {
+    "wh3_dlc23_chd_chaos_dwarfs": "wh_main_chs_chaos",
+    "wh2_dlc11_cst_vampire_coast": "wh_main_vmp_vampire_counts",
+}
+
+
+def devastation_looks(cultures):
+    """{culture key: culture whose devastation look it uses}; cultures not listed leave the land alone."""
     key, look = cultures.col("key"), cultures.col("devastation_state")
-    return sorted(r[key] for r in cultures.rows if r[look])
+    looks = {r[key]: r[key] for r in cultures.rows if r[look]}
+    looks.update(BORROWED_LOOKS)
+    return dict(sorted(looks.items()))

@@ -13,8 +13,12 @@ EMPIRE, SKAVEN = "wh_main_emp_empire", "wh2_main_skv_skaven"
 ARCHAON, ARCHAON_VASSAL = "wh_main_chs_chaos", "wh3_main_kho_vassal"
 SKAVEN_FACTION = "wh2_main_skv_clan_mors"
 BEASTMEN, VAMPIRES = "wh_dlc03_bst_beastmen", "wh_main_vmp_vampire_counts"
-# Same as cultures_with_look() on vanilla data, trimmed to what the tests use.
-LOOK_CULTURES = [SKAVEN, "wh_main_chs_chaos", "wh_dlc03_bst_beastmen", "wh_main_vmp_vampire_counts"]
+VAMPIRE_COAST = "wh2_dlc11_cst_vampire_coast"
+# Same shape as devastation_looks() on vanilla data, trimmed to what the tests use.
+LOOK_CULTURES = {SKAVEN: SKAVEN, "wh_main_chs_chaos": "wh_main_chs_chaos",
+                 "wh_dlc03_bst_beastmen": "wh_dlc03_bst_beastmen",
+                 "wh_main_vmp_vampire_counts": "wh_main_vmp_vampire_counts",
+                 VAMPIRE_COAST: "wh_main_vmp_vampire_counts"}
 
 # Same shape as the vanilla archaon_narrative this mod defers to.
 ARCHAON_NARRATIVE = """
@@ -137,9 +141,16 @@ def test_no_event_area_no_activation(g):
     assert [c[0] for c in calls(g)] == [c[0] for c in ERASE_R1]
 
 
-def test_has_look(g):
-    assert g.permraze.has_look(g.permraze, SKAVEN) is True
-    assert g.permraze.has_look(g.permraze, EMPIRE) is False
+def test_look_for(g):
+    assert g.permraze.look_for(g.permraze, SKAVEN) == SKAVEN
+    assert g.permraze.look_for(g.permraze, VAMPIRE_COAST) == "wh_main_vmp_vampire_counts"
+    assert g.permraze.look_for(g.permraze, EMPIRE) is None
+
+
+def test_borrowed_look(g):
+    for r in ("r1", "r2"):
+        decide(g, r, faction="wh2_dlc11_cst_pirates"); raze(g, r, faction="wh2_dlc11_cst_pirates")
+    assert activations(g) == [("activate_campaign_map_event_area", "area_p1", "wh_main_vmp_vampire_counts")]
 
 
 def test_forbidden_calls_never_made(g):
