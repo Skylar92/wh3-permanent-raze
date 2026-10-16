@@ -50,7 +50,7 @@ python -m pytest
 python -m tools.build
 ```
 
-`python -m tools.build` writes `dist/permanent_raze.pack`, thirteen `dist/permanent_raze_<lang>.pack` patches and their Workshop preview images (`tools/preview.py` draws them). `--install [--lang ru]` also copies the main pack and one patch into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
+`python -m tools.build` writes `dist/permanent_raze.pack` and its Workshop preview image `dist/permanent_raze.png` (drawn by `tools/preview.py`). `--install` also copies both into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
 
 ### How it works
 
@@ -59,9 +59,9 @@ python -m tools.build
 - `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 - In-game checks: `docs/ingame-checklist.md`; store page texts: `docs/publish/`.
 
-### Translations
+### Texts
 
-All texts live in [`tools/texts.py`](tools/texts.py): `VANILLA_TEXTS` for the main pack (references to the game's own strings via `{{tr:key}}`) and `TEXTS` for the patches. English and Russian are written by the authors; the other languages follow the game's own official wording for "Raze" and "ruins" but have not been proofread by native speakers. Corrections are very welcome — open an issue or a pull request.
+The mod writes no translations of its own: [`tools/texts.py`](tools/texts.py) composes every text from strings the game already ships in all its languages, referenced as `{{tr:key}}` (for example "Raze" + "Scorched Earth"). A test checks that each referenced string exists in every game language.
 
 ## Credits
 

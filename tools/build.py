@@ -1,10 +1,9 @@
 """Build permanent_raze.pack from the installed game's vanilla data.
 
-usage: python -m tools.build [--install [--lang ru]]
+usage: python -m tools.build [--install]
 
-Writes dist/permanent_raze.pack (texts composed from the game's own translations) and one
-dist/permanent_raze_<lang>.pack translation patch per game language. --install copies the main pack and the
-patch for --lang (default ru), with their preview images, into the game's data folder.
+Writes dist/permanent_raze.pack and its Workshop preview dist/permanent_raze.png;
+--install copies both into the game's data folder.
 """
 import shutil
 import sys
@@ -14,12 +13,12 @@ from tools.generate import (devastation_looks, make_bundle_tables, make_effect_t
                             make_option_clones)
 from tools.loc import encode_loc
 from tools.packfile import read_pack, write_pack
-from tools.preview import main as write_previews
+from tools.preview import make_preview, save_preview
 from tools.paths import GAME_DATA, ROOT, SCHEMA
 from tools.render import render_script
-from tools.texts import LANGUAGES
 
 PACK_NAME = "permanent_raze.pack"
+PREVIEW_NAME = "permanent_raze.png"
 TABLE_FILE = "permanent_raze"
 SCRIPT_PATH = "script/campaign/mod/permraze.lua"
 OPTIONS = "culture_settlement_occupation_options_tables"
@@ -57,36 +56,15 @@ def build(out_path):
     return files
 
 
-def patch_name(lang):
-    return "permanent_raze_%s.pack" % lang
-
-
-def build_language_patch(lang, out_path):
-    """A translation patch: one loc file whose '!' prefix sorts it ahead of the main pack's English loc."""
-    _, table = _vanilla_tables()
-    _, _, ids = make_option_clones(table(OPTIONS), table(CRITERIA))
-    files = {f"text/db/!permraze_{lang}.loc": encode_loc(make_loc(ids, lang))}
-    write_pack(out_path, files)
-    return files
-
-
-def main(argv):
-    dist = ROOT / "dist"
+def main(argv, dist=ROOT / "dist"):
     dist.mkdir(exist_ok=True)
-    built = [dist / PACK_NAME]
-    build(built[0])
-    for lang in LANGUAGES:
-        built.append(dist / patch_name(lang))
-        build_language_patch(lang, built[-1])
-    print("built %d packs in %s" % (len(built), dist))
-    write_previews()
+    build(dist / PACK_NAME)
+    save_preview(make_preview(), dist / PREVIEW_NAME)
+    print("built %s and %s" % (dist / PACK_NAME, dist / PREVIEW_NAME))
     if "--install" in argv:
-        lang = argv[argv.index("--lang") + 1] if "--lang" in argv else "ru"
-        for name in (PACK_NAME, patch_name(lang)):
-            for file_name in (name, name.replace(".pack", ".png")):  # the launcher wants the preview next to the pack
-                shutil.copyfile(dist / file_name, GAME_DATA / file_name)
-                print("installed %s" % (GAME_DATA / file_name))
-
+        for name in (PACK_NAME, PREVIEW_NAME):  # the launcher wants the preview next to the pack
+            shutil.copyfile(dist / name, GAME_DATA / name)
+            print("installed %s" % (GAME_DATA / name))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

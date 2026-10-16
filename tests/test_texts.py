@@ -2,25 +2,7 @@ import re
 
 import pytest
 
-from tools.texts import FIELDS, LANGUAGES, TEXTS, VANILLA_TEXTS
-
-
-def test_all_game_languages_present():
-    assert LANGUAGES == ("en", "ru", "ge", "fr", "it", "sp", "pl", "cz", "tr", "br", "kr", "cn", "zh")
-    assert set(TEXTS) == set(LANGUAGES)
-
-
-def test_every_language_has_every_text():
-    for lang in LANGUAGES:
-        assert set(TEXTS[lang]) == set(FIELDS), lang
-        for field, text in TEXTS[lang].items():
-            assert text.strip() and "||" not in text, (lang, field)
-
-
-def test_english_and_russian_wording():
-    assert TEXTS["en"]["title"] == "Raze Forever"
-    assert TEXTS["ru"]["title"] == "Стереть навсегда"
-    assert TEXTS["ru"]["bundle_title"] == "Стёрто навсегда"
+from tools.texts import FIELDS, GAME_LANGUAGES, VANILLA_TEXTS
 
 
 def test_vanilla_texts_are_composites():
@@ -37,7 +19,7 @@ def test_vanilla_keys_exist_in_every_language():
     from tools.paths import GAME_DATA
     keys = {k for text in VANILLA_TEXTS.values() for k in re.findall(r"\{\{tr:([^}]+)\}\}", text)}
     assert keys
-    for lang in LANGUAGES:
+    for lang in GAME_LANGUAGES:
         loc = {}
         for name, data in read_pack(GAME_DATA / f"local_{lang}.pack").items():
             if name.endswith(".loc"):

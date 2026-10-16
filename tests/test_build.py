@@ -1,6 +1,6 @@
 import pytest
 
-from tools.build import build, build_language_patch
+from tools.build import build, main
 from tools.dbtable import decode_table
 from tools.loc import decode_loc
 from tools.packfile import read_pack
@@ -51,11 +51,7 @@ def test_main_loc_uses_vanilla_translations(built):
         "{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}")
 
 
-@pytest.mark.parametrize("lang", ["en", "ru", "ge", "fr", "it", "sp", "pl", "cz", "tr", "br", "kr", "cn", "zh"])
-def test_language_patch(built, tmp_path, lang):
-    out = tmp_path / f"permanent_raze_{lang}.pack"
-    build_language_patch(lang, out)
-    patch = read_pack(out)
-    assert list(patch) == [f"text/db/!permraze_{lang}.loc"]
-    keys = dict(decode_loc(patch[f"text/db/!permraze_{lang}.loc"]))
-    assert set(keys) == set(dict(decode_loc(built["text/db/permanent_raze.loc"])))
+
+def test_main_writes_only_the_mod_and_its_preview(tmp_path):
+    main([], dist=tmp_path)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["permanent_raze.pack", "permanent_raze.png"]

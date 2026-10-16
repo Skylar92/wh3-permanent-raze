@@ -14,14 +14,6 @@ def test_bundle_clone(vanilla_bundles, vanilla_junctions):
            [("permraze_block_occupation", "permraze_effect_block_occupation", "region_to_region_own")]
 
 
-def test_loc_keys_russian():
-    loc = dict(make_loc([2100500000], "ru"))
-    assert loc["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Стереть навсегда||")
-    assert loc["effect_bundles_localised_title_permraze_block_occupation"] == "Стёрто навсегда"
-    assert loc["effect_bundles_localised_description_permraze_block_occupation"] == \
-           "Эти руины уничтожены окончательно. Здесь больше никто не сможет поселиться."
-
-
 @pytest.mark.game
 def test_devastation_looks(vanilla_cultures):
     looks = devastation_looks(vanilla_cultures)
@@ -51,7 +43,3 @@ def test_loc_defaults_to_vanilla_composites():
         "||{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}")
     assert loc["effects_description_permraze_effect_block_occupation"] ==            "{{tr:effects_description_wh3_main_effect_endgame_block_occupation}}"
 
-
-def test_loc_english_patch():
-    loc = dict(make_loc([2100500000], "en"))
-    assert loc["culture_settlement_occupation_options_tooltip_2100500000"].startswith("Raze Forever||")

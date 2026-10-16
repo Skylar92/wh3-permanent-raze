@@ -1,6 +1,6 @@
 """Generate the mod's db rows and localisation from vanilla tables."""
 from tools.dbtable import Table
-from tools.texts import TEXTS, VANILLA_TEXTS
+from tools.texts import VANILLA_TEXTS
 
 OPTION_ID_BASE = 2100500000
 RAZE_OPTION = "occupation_decision_raze_without_occupy"
@@ -108,9 +108,8 @@ def _tooltip(texts):
     return texts["title"] + "||" + texts["description"]
 
 
-def make_loc(option_ids, lang=None):
-    """Loc entries: vanilla-composite texts for the main pack, or a language's full texts for its patch."""
-    texts = TEXTS[lang] if lang else VANILLA_TEXTS
+def make_loc(option_ids):
+    texts = VANILLA_TEXTS
     entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(texts)) for i in option_ids]
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))

@@ -1,6 +1,6 @@
 """Draw the Workshop preview: a burning, razed settlement under smoke.
 
-usage: python -m tools.preview   (writes dist/permanent_raze.png and dist/permanent_raze_<lang>.png)
+Written by tools/build.py next to the pack as dist/permanent_raze.png.
 """
 import random
 
@@ -10,20 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 SIZE = 512
 GROUND = 430
 FONT = r"C:\Windows\Fonts\georgiab.ttf"
-FONT_BADGE = r"C:\Windows\Fonts\seguisb.ttf"
-# Segoe has no Hangul or Han glyphs; these Windows fonts do.
-FONT_BADGE_CJK = {
-    "한국어": r"C:\Windows\Fonts\malgunbd.ttf",
-    "简体中文": r"C:\Windows\Fonts\msyhbd.ttc",
-    "繁體中文": r"C:\Windows\Fonts\msjhbd.ttc",
-}
 INK = (9, 6, 5, 255)
-
-LANGUAGE_NAMES = {
-    "en": "English", "ru": "Русский", "ge": "Deutsch", "fr": "Français", "it": "Italiano", "sp": "Español",
-    "pl": "Polski", "cz": "Čeština", "tr": "Türkçe", "br": "Português (BR)", "kr": "한국어",
-    "cn": "简体中文", "zh": "繁體中文",
-}
 
 
 def _sky(rng):
@@ -171,21 +158,7 @@ def _title(img):
     d.line(((SIZE / 2 - 120, line_y), (SIZE / 2 + 120, line_y)), fill=(180, 60, 20, 255), width=2)
 
 
-def badge_font_path(label):
-    return FONT_BADGE_CJK.get(label, FONT_BADGE)
-
-
-def _badge(img, label):
-    d = ImageDraw.Draw(img)
-    font = ImageFont.truetype(badge_font_path(label), 22)
-    box = d.textbbox((0, 0), label, font=font)
-    w, h = box[2] - box[0] + 28, box[3] - box[1] + 18
-    x, y = SIZE - w - 16, SIZE - h - 16
-    d.rounded_rectangle((x, y, x + w, y + h), radius=8, fill=(20, 10, 8, 225), outline=(190, 70, 20, 255), width=2)
-    d.text((x + 14, y + 7 - box[1]), label, font=font, fill=(236, 214, 170, 255))
-
-
-def make_preview(language_label=None):
+def make_preview():
     rng = random.Random(1142710)
     nrng = np.random.default_rng(1142710)
     fires = [(214, 412, 40), (88, 418, 30), (342, 420, 28), (466, 414, 24)]
@@ -200,24 +173,8 @@ def make_preview(language_label=None):
     img.alpha_composite(_embers(rng))
     img.alpha_composite(_vignette())
     _title(img)
-    if language_label:
-        _badge(img, language_label)
     return img.convert("RGB")
 
 
 def save_preview(img, path):
     img.save(path, "PNG", optimize=True)
-
-
-def main():
-    from tools.paths import ROOT
-    dist = ROOT / "dist"
-    dist.mkdir(exist_ok=True)
-    save_preview(make_preview(), dist / "permanent_raze.png")
-    for code, name in LANGUAGE_NAMES.items():
-        save_preview(make_preview(name), dist / ("permanent_raze_%s.png" % code))
-    print("previews written to %s" % dist)
-
-
-if __name__ == "__main__":
-    main()
