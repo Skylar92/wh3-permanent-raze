@@ -1,3 +1,82 @@
-# Стереть навсегда (Total War: WARHAMMER III)
+# Raze Forever / Стереть навсегда
 
-Сборка: `python -m tools.build` — основной пак (английский) и языковые патчи `permanent_raze_<язык>.pack` в `dist/`. С `--install [--lang ru]` копирует основной пак и патч нужного языка в папку `data` игры. Тесты: `python -m pytest`.
+A Total War: WARHAMMER III mod. Next to the usual "Raze" option, every culture gets a **Raze Forever** option: the settlement is wiped off the map and the ruins can never be occupied or colonised again — by anyone, the player included. It is the same permanent block Archaon uses on his Lord of the End Times path, made available to every faction.
+
+*Русская версия ниже.*
+
+## Features
+
+- **Raze Forever** option after capturing a settlement, for every culture except Nagash's Undead Legions (devastation is already their whole mechanic).
+- The ruins get the vanilla "devastated" look and a permanent occupation block — the engine's own `block_region_occupation`, not an "AI won't target it" trick.
+- When more than half of a province's settlements are in ruins, the province gets the campaign devastation visuals, but only for cultures that fit:
+  - Chaos wasteland: Warriors of Chaos, Khorne, Nurgle, Slaanesh, Tzeentch, Daemons of Chaos, Beastmen, Norsca, Chaos Dwarfs;
+  - Skaven blight: Skaven;
+  - Nagash's dead land: Vampire Counts, Vampire Coast;
+  - everyone else (Empire, Bretonnia, Dwarfs, Kislev, Cathay, elves, Lizardmen, Greenskins, Ogres, Tomb Kings…) leaves the land as it is.
+- No corruption, no climate change, no faction bonuses. The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
+- Human players only: the AI never gets a permanent block from it.
+- Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
+- Texts in all 13 game languages.
+
+## Install
+
+1. Subscribe to (or copy into `data/`) **`permanent_raze.pack`** — the mod itself, English texts.
+2. For another language also enable the matching translation patch **`permanent_raze_<lang>.pack`**: `ru`, `ge`, `fr`, `it`, `sp`, `pl`, `cz`, `tr`, `br`, `kr`, `cn`, `zh`.
+3. Enable both in the launcher. The patch's `!`-prefixed loc file overrides the English text.
+
+Safe to add to a running campaign. **Do not remove it mid-campaign**: saves reference the mod's effect bundle and may fail to load, and erased ruins could become settleable again.
+
+## Known behaviour
+
+- On the very first scripted capture of some campaigns (the "Attack the enemy" tutorial mission, e.g. Ku'gath, Skaven, Chaos Dwarfs starts) the game ignores any raze option, vanilla Raze included; the settlement stays with the enemy and the "Capture and occupy" mission follows. Later captures work normally.
+- When an endgame crisis ends, the game may clear devastation visuals in its area; the ruins stay blocked.
+- The new option uses the same picture as the culture's Raze; only the label and tooltip differ.
+
+## Building from source
+
+Requires Python 3.14 and the game installed (the builder reads vanilla `db.pack`).
+
+```bash
+python -m pip install pytest lupa
+python -m pytest
+python -m tools.build
+```
+
+`python -m tools.build` writes `dist/permanent_raze.pack` and twelve `dist/permanent_raze_<lang>.pack` patches. `--install [--lang ru]` also copies the main pack and one patch into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
+
+### How it works
+
+- `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
+- `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
+- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
+- In-game checks: `docs/ingame-checklist.md`.
+
+---
+
+## Стереть навсегда (по-русски)
+
+Мод для Total War: WARHAMMER III. Рядом с обычным «Разрушить» у каждой культуры появляется **«Стереть навсегда»**: поселение исчезает с карты, и руины больше никто и никогда не сможет занять или заселить, включая самого игрока. Это тот же вечный запрет, что у Архаона на пути «Повелителя Конца Времён», только для всех фракций.
+
+### Что делает
+
+- Кнопка есть у всех культур, кроме Легионов Нежити Нагаша: опустошение и так их суть.
+- Руины выглядят опустошёнными и закрыты для заселения встроенным в движок запретом, а не трюком «ИИ туда не ходит».
+- Когда больше половины поселений провинции в руинах, земля выгорает, но только у тех, кому это по лору: хаосная пустошь у Хаоса, его богов, Демонов, Зверолюдов, Норски и Гномов Хаоса; скавенская у Скавенов; мёртвая земля Нагаша у Вампиров и Вампирского побережья. У остальных земля не меняется.
+- Ни скверны, ни смены климата, ни бонусов. Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
+- Только для игроков: ИИ вечный запрет не получает.
+- Совместим с путём «Разрушителя» у Архаона: провинцию опустошает и засчитывает его собственная механика.
+- Тексты на всех 13 языках игры.
+
+### Установка
+
+1. Основной мод **`permanent_raze.pack`** (тексты на английском).
+2. Для русского языка дополнительно **`permanent_raze_ru.pack`** (есть патчи для всех языков игры).
+3. Включить оба в лаунчере.
+
+Можно добавлять в идущую кампанию. **Не удаляйте мод посреди кампании**: сохранение может не загрузиться, а стёртые руины могут снова стать заселяемыми.
+
+### Известное поведение
+
+- На первом обучающем захвате кампании (задание «Нападите на врага», например старт Ку'гата, скавенов, гномов Хаоса) игра игнорирует любое разрушение, в том числе обычное: поселение остаётся у врага, и выдаётся задание «Захватите и оккупируйте». Дальше всё работает.
+- После окончания эндгейм-кризиса игра может убрать выжженную землю в его области, но руины остаются заблокированными.
+- У новой кнопки та же картинка, что у «Разрушить», отличаются только подпись и подсказка.
