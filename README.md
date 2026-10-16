@@ -1,6 +1,16 @@
-# Raze Forever / Стереть навсегда
+<p align="center">
+  <img src="assets/preview.png" alt="Raze Forever" width="360">
+</p>
 
-> *"Some places should never rise again."*
+<h1 align="center">Raze Forever / Стереть навсегда</h1>
+
+<p align="center"><i>"Some places should never rise again."</i></p>
+
+<p align="center">
+  <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3820765666">Steam Workshop</a> ·
+  <a href="https://www.nexusmods.com/totalwarwarhammer3/mods/413">Nexus Mods</a> ·
+  <a href="LICENSE">MIT License</a>
+</p>
 
 **Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included. It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
 
