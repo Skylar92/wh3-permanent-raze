@@ -27,7 +27,6 @@ ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
 BUNDLE_KEY = "permraze_block_occupation"
 ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
 EFFECT_KEY = "permraze_effect_block_occupation"
-FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
 
 
 def _empty_like(table):

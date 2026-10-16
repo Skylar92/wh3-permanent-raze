@@ -5,8 +5,9 @@
 --	Adds a "raze forever" occupation option for every culture. When a human
 --	player picks it, the ruins are blocked for everyone the same way Archaon's
 --	Lord of the End Times path does it, and once more than half of a province
---	is in ruins the province gets the campaign devastation visuals (no
---	corruption, no climate change, no bonuses).
+--	is in ruins the province gets the campaign devastation visuals, but only
+--	for cultures the game gives their own look (Chaos, Beastmen, Norsca,
+--	Daemons, Skaven, Vampires). No corruption, no climate change, no bonuses.
 --
 ------------------------------------------------------------------------------
 
@@ -18,7 +19,6 @@ local LOOK_CULTURES = {} --@@LOOK_CULTURES@@
 local BUNDLE_KEY = "permraze_block_occupation"
 local SETTLEMENT_TYPE = "wh3_dlc29_devastated"
 local SETTLEMENT_STATE = "devastated"
-local FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
 local SAVE_KEY = "permraze"
 
 local function new_state()
@@ -104,7 +104,7 @@ function permraze:maybe_devastate_province(region_key, culture_key)
 	local province = region:province()
 	local province_key = province:key()
 
-	if self.persistent.devastated_provinces[province_key] then
+	if self.persistent.devastated_provinces[province_key] or not self:has_look(culture_key) then
 		return false
 	end
 
@@ -131,17 +131,16 @@ function permraze:maybe_devastate_province(region_key, culture_key)
 		return false
 	end
 
-	cm:activate_campaign_map_event_area(event_area_key, self:look_culture(culture_key))
+	cm:activate_campaign_map_event_area(event_area_key, culture_key)
 	self.persistent.devastated_provinces[province_key] = true
 	out("Permanent Raze: devastated province " .. province_key)
 	return true
 end
 
-function permraze:look_culture(culture_key)
-	if LOOK_CULTURES[culture_key] then
-		return culture_key
-	end
-	return FALLBACK_LOOK_CULTURE
+-- Only cultures with their own devastation look scorch the land; Bretonnia
+-- razing a province should not turn it into a Chaos wasteland.
+function permraze:has_look(culture_key)
+	return LOOK_CULTURES[culture_key] == true
 end
 
 function permraze:init()

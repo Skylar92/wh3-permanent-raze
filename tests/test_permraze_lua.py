@@ -12,6 +12,9 @@ OUR_ID = "2100500000"
 EMPIRE, SKAVEN = "wh_main_emp_empire", "wh2_main_skv_skaven"
 ARCHAON, ARCHAON_VASSAL = "wh_main_chs_chaos", "wh3_main_kho_vassal"
 SKAVEN_FACTION = "wh2_main_skv_clan_mors"
+BEASTMEN, VAMPIRES = "wh_dlc03_bst_beastmen", "wh_main_vmp_vampire_counts"
+# Same as cultures_with_look() on vanilla data, trimmed to what the tests use.
+LOOK_CULTURES = [SKAVEN, "wh_main_chs_chaos", "wh_dlc03_bst_beastmen", "wh_main_vmp_vampire_counts"]
 
 # Same shape as the vanilla archaon_narrative this mod defers to.
 ARCHAON_NARRATIVE = """
@@ -32,7 +35,7 @@ end
 def g():
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(MOCK)
-    lua.execute(render_script(TEMPLATE, [int(OUR_ID)], [SKAVEN]))
+    lua.execute(render_script(TEMPLATE, [int(OUR_ID)], LOOK_CULTURES))
     g = lua.globals()
     g.lua = lua
     return g
@@ -101,19 +104,31 @@ def test_turn_state_cleared_each_round(g):
 
 
 def test_province_threshold(g):
-    decide(g, "r1"); raze(g, "r1")
-    assert not [c for c in calls(g) if c[0] == "activate_campaign_map_event_area"]
-    decide(g, "r2"); raze(g, "r2")
-    decide(g, "r3"); raze(g, "r3")
-    assert [c for c in calls(g) if c[0] == "activate_campaign_map_event_area"] == \
-           [("activate_campaign_map_event_area", "area_p1", "wh_main_chs_chaos")]
+    decide(g, "r1", faction=BEASTMEN); raze(g, "r1", faction=BEASTMEN)
+    assert activations(g) == []
+    decide(g, "r2", faction=BEASTMEN); raze(g, "r2", faction=BEASTMEN)
+    decide(g, "r3", faction=BEASTMEN); raze(g, "r3", faction=BEASTMEN)
+    assert activations(g) == [("activate_campaign_map_event_area", "area_p1", "wh_dlc03_bst_beastmen")]
     assert g.permraze.persistent.devastated_provinces["p1"] is True
+
+
+def test_vampires_get_their_own_look(g):
+    for r in ("r1", "r2"):
+        decide(g, r, faction=VAMPIRES); raze(g, r, faction=VAMPIRES)
+    assert activations(g) == [("activate_campaign_map_event_area", "area_p1", "wh_main_vmp_vampire_counts")]
+
+
+def test_culture_without_look_leaves_land_alone(g):
+    for r in ("r1", "r2", "r3"):
+        decide(g, r); raze(g, r)
+    assert activations(g) == []
+    assert ("apply_effect_bundle_to_region", "permraze_block_occupation", "r3", 0) in calls(g)
 
 
 def test_area_already_active_skipped(g):
     g.ACTIVE_AREAS["area_p1"] = True
     for r in ("r1", "r2"):
-        decide(g, r); raze(g, r)
+        decide(g, r, faction=BEASTMEN); raze(g, r, faction=BEASTMEN)
     assert not [c for c in calls(g) if c[0] == "activate_campaign_map_event_area"]
 
 
@@ -122,9 +137,9 @@ def test_no_event_area_no_activation(g):
     assert [c[0] for c in calls(g)] == [c[0] for c in ERASE_R1]
 
 
-def test_look_culture(g):
-    assert g.permraze.look_culture(g.permraze, SKAVEN) == SKAVEN
-    assert g.permraze.look_culture(g.permraze, EMPIRE) == "wh_main_chs_chaos"
+def test_has_look(g):
+    assert g.permraze.has_look(g.permraze, SKAVEN) is True
+    assert g.permraze.has_look(g.permraze, EMPIRE) is False
 
 
 def test_forbidden_calls_never_made(g):

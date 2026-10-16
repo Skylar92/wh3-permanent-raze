@@ -49,6 +49,8 @@ local FACTIONS = {
 	wh_main_emp_empire = { culture = "wh_main_emp_empire" },
 	wh2_main_skv_clan_mors = { culture = "wh2_main_skv_skaven" },
 	wh_main_chs_chaos = { culture = "wh_main_chs_chaos" },
+	wh_dlc03_bst_beastmen = { culture = "wh_dlc03_bst_beastmen" },
+	wh_main_vmp_vampire_counts = { culture = "wh_main_vmp_vampire_counts" },
 	wh3_main_kho_vassal = { culture = "wh3_main_kho_khorne", master = "wh_main_chs_chaos" },
 }
 

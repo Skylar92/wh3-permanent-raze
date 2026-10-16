@@ -25,8 +25,9 @@ def test_loc_keys_russian():
 @pytest.mark.game
 def test_cultures_with_look(vanilla_cultures):
     looks = cultures_with_look(vanilla_cultures)
-    assert "wh_main_chs_chaos" in looks and "wh2_main_skv_skaven" in looks
-    assert "wh_main_emp_empire" not in looks
+    assert {"wh_main_chs_chaos", "wh_dlc03_bst_beastmen", "wh2_main_skv_skaven",
+            "wh_main_vmp_vampire_counts"} <= set(looks)
+    assert "wh_main_emp_empire" not in looks and "wh_main_brt_bretonnia" not in looks
 
 
 @pytest.mark.game
