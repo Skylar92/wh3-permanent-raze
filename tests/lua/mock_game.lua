@@ -58,10 +58,28 @@ function cm:override_settlement_climate(...) rec("override_settlement_climate") 
 function cm:add_first_tick_callback(f) FIRST_TICK[#FIRST_TICK + 1] = f end
 function cm:add_saving_game_callback(f) SAVE_CALLBACKS[#SAVE_CALLBACKS + 1] = f end
 function cm:add_loading_game_callback(f) LOAD_CALLBACKS[#LOAD_CALLBACKS + 1] = f end
-function cm:save_named_value(name, value, context) context[name] = value end
-function cm:load_named_value(name, default, context)
-	if context[name] == nil then return default end
-	return context[name]
+-- Mirrors lib_campaign_manager: tables are serialised (stored as copies here) and
+-- only come back when the default is a table; a nil default without allow_nil
+-- is an error that returns false.
+local function deep_copy(v)
+	if type(v) ~= "table" then return v end
+	local t = {}
+	for k, x in pairs(v) do t[k] = deep_copy(x) end
+	return t
+end
+function cm:save_named_value(name, value, context) context[name] = deep_copy(value) end
+function cm:load_named_value(name, default, context, allow_nil)
+	local stored = context[name]
+	if type(default) == "table" then
+		if type(stored) == "table" then return deep_copy(stored) end
+		return default
+	end
+	if default == nil and not allow_nil then
+		rec("script_error", "load_named_value without default")
+		return false
+	end
+	if stored == nil then return default end
+	return stored
 end
 
 climate_change = { add_climate_override = function() rec("add_climate_override") end }

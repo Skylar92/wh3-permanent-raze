@@ -182,7 +182,7 @@ cm:add_saving_game_callback(
 
 cm:add_loading_game_callback(
 	function(context)
-		local loaded = cm:load_named_value(SAVE_KEY, nil, context)
+		local loaded = cm:load_named_value(SAVE_KEY, new_state(), context)
 		local state = new_state()
 		if type(loaded) == "table" then
 			for key, value in pairs(state) do

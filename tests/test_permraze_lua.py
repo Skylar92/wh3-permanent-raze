@@ -128,6 +128,7 @@ def test_load_without_saved_state(g):
     p = g.permraze.persistent
     assert p.erased is not None and p.pending is not None
     assert p.razed is not None and p.devastated_provinces is not None
+    assert calls(g) == []  # no script_error from load_named_value
 
 
 CONTEXTS = """
