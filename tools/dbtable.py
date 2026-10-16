@@ -19,6 +19,7 @@ class Table:
     guid: str | None
     fields: list[tuple[str, str]]
     rows: list[list]
+    versioned: bool = True  # old tables have no version marker (version 0)
 
     def col(self, name):
         for i, (field, _) in enumerate(self.fields):
@@ -68,11 +69,12 @@ def _write_str(value, wide):
 
 
 def decode_table(schema, name, data):
-    pos, guid, version = 0, None, 0
+    pos, guid, version, versioned = 0, None, 0, False
     if data[:4] == GUID_MARKER:
         guid, pos = _read_str(data, 4, wide=True)
     if data[pos:pos + 4] == VERSION_MARKER:
         version = struct.unpack_from("<i", data, pos + 4)[0]
+        versioned = True
         pos += 8
     pos += 1  # always 0x01
     count = struct.unpack_from("<I", data, pos)[0]
@@ -102,14 +104,16 @@ def decode_table(schema, name, data):
         rows.append(row)
     if pos != len(data):
         raise ValueError("%s: decoded %d of %d bytes" % (name, pos, len(data)))
-    return Table(name, version, guid, list(fields), rows)
+    return Table(name, version, guid, list(fields), rows, versioned)
 
 
 def encode_table(schema, table):
     out = bytearray()
     if table.guid is not None:
         out += GUID_MARKER + _write_str(table.guid, wide=True)
-    out += VERSION_MARKER + struct.pack("<i", table.version) + b"\x01"
+    if table.versioned:
+        out += VERSION_MARKER + struct.pack("<i", table.version)
+    out += b"\x01"
     out += struct.pack("<I", len(table.rows))
     for row in table.rows:
         for (_, ftype), value in zip(table.fields, row):

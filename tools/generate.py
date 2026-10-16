@@ -27,7 +27,7 @@ FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
 
 
 def _empty_like(table):
-    return Table(table.name, table.version, table.guid, list(table.fields), [])
+    return Table(table.name, table.version, table.guid, list(table.fields), [], table.versioned)
 
 
 def select_sources(options):

@@ -8,6 +8,8 @@ TABLES = [
     "effect_bundles_tables",
     "effect_bundles_to_effects_junctions_tables",
     "cultures_tables",
+    "effects_tables",  # no version marker
+    "effect_bonus_value_basic_junction_tables",  # no version marker
 ]
 
 
