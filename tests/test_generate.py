@@ -14,9 +14,10 @@ def clones(vanilla_options, vanilla_criteria):
 
 
 def test_clone_count(clones):
-    # one clone per raze group: 51 vanilla raze rows in 49 groups (Khorne and Beastmen have two each)
-    assert len(clones.ids) == 49
-    assert clones.ids == list(range(2100500000, 2100500049))
+    # one clone per raze group: 51 vanilla raze rows in 49 groups (Khorne and Beastmen have two each),
+    # minus Nagash's Undead Legions, who devastate everything anyway
+    assert len(clones.ids) == 48
+    assert clones.ids == list(range(2100500000, 2100500048))
     assert [r[clones.options.col("id")] for r in clones.options.rows] == clones.ids
 
 
@@ -67,3 +68,8 @@ def test_beastmen_criteria_copied(clones):
 def test_ids_do_not_collide(clones, vanilla_options):
     vanilla = {r[vanilla_options.col("id")] for r in vanilla_options.rows}
     assert not vanilla & set(clones.ids) and max(clones.ids) < 2**31
+
+
+def test_undead_legions_excluded(clones):
+    groups = [r[clones.options.col("group")] for r in clones.options.rows]
+    assert "wh3_dlc29_sc_nag_undead_legions_occupation_decision_raze_without_occupy" not in groups

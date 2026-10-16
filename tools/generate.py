@@ -5,6 +5,10 @@ from tools.texts import TEXTS
 OPTION_ID_BASE = 2100500000
 RAZE_OPTION = "occupation_decision_raze_without_occupy"
 DEFAULT_LANGUAGE = "en"
+# Option groups that get no "raze forever" button: Nagash's Undead Legions devastate everything anyway.
+EXCLUDED_GROUPS = frozenset({
+    "wh3_dlc29_sc_nag_undead_legions_occupation_decision_raze_without_occupy",
+})
 
 # Columns cleared on every clone: faction-specific rewards, costs and timed bundles.
 _CLEARED = (
@@ -39,7 +43,7 @@ def select_sources(options):
     group, required, row_id = options.col("group"), options.col("required_resources"), options.col("id")
     best = {}
     for r in options.rows:
-        if r[options.col("settlement_option")] != RAZE_OPTION:
+        if r[options.col("settlement_option")] != RAZE_OPTION or r[group] in EXCLUDED_GROUPS:
             continue
         rank = (bool(r[required]), r[row_id])
         if r[group] not in best or rank < best[r[group]][0]:
