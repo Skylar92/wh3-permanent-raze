@@ -52,7 +52,7 @@ python -m pytest
 python -m tools.build
 ```
 
-`python -m tools.build` writes `dist/permanent_raze.pack` and twelve `dist/permanent_raze_<lang>.pack` patches. `--install [--lang ru]` also copies the main pack and one patch into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
+`python -m tools.build` writes `dist/permanent_raze.pack`, twelve `dist/permanent_raze_<lang>.pack` patches and their Workshop preview images (`tools/preview.py` draws them). `--install [--lang ru]` also copies the main pack and one patch into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
 
 ### How it works
 

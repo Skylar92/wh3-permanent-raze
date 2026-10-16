@@ -4,7 +4,7 @@ usage: python -m tools.build [--install [--lang ru]]
 
 Writes dist/permanent_raze.pack (English texts) and one dist/permanent_raze_<lang>.pack
 translation patch per other game language. --install copies the main pack and the
-patch for --lang (default ru) into the game's data folder.
+patch for --lang (default ru), with their preview images, into the game's data folder.
 """
 import shutil
 import sys
@@ -14,6 +14,7 @@ from tools.generate import (devastation_looks, make_bundle_tables, make_effect_t
                             make_option_clones)
 from tools.loc import encode_loc
 from tools.packfile import read_pack, write_pack
+from tools.preview import main as write_previews
 from tools.paths import GAME_DATA, ROOT, SCHEMA
 from tools.render import render_script
 from tools.texts import LANGUAGES
@@ -79,11 +80,13 @@ def main(argv):
             built.append(dist / patch_name(lang))
             build_language_patch(lang, built[-1])
     print("built %d packs in %s" % (len(built), dist))
+    write_previews()
     if "--install" in argv:
         lang = argv[argv.index("--lang") + 1] if "--lang" in argv else "ru"
         for name in [PACK_NAME] + ([patch_name(lang)] if lang != "en" else []):
-            shutil.copyfile(dist / name, GAME_DATA / name)
-            print("installed %s" % (GAME_DATA / name))
+            for file_name in (name, name.replace(".pack", ".png")):  # the launcher wants the preview next to the pack
+                shutil.copyfile(dist / file_name, GAME_DATA / file_name)
+                print("installed %s" % (GAME_DATA / file_name))
 
 
 if __name__ == "__main__":
