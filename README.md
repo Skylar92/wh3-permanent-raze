@@ -70,6 +70,10 @@ All texts live in [`tools/texts.py`](tools/texts.py). English and Russian are wr
 - [RPFM](https://github.com/Frodo45127/rpfm) and its [schemas](https://github.com/Frodo45127/rpfm-schemas) by Frodo45127 — the table layouts in `schemas/` come from there.
 - Creative Assembly, for Archaon's devastation mechanic this mod borrows.
 
+## License
+
+The mod's code, scripts and texts are released under the [MIT License](LICENSE) © 2026 Skylar92. Total War: WARHAMMER III and its game data, art and mechanics belong to Creative Assembly and Games Workshop; this is an unofficial fan mod and is not endorsed by them.
+
 ---
 
 ## Стереть навсегда (по-русски)
