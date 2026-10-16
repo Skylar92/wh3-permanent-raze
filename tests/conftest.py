@@ -29,3 +29,18 @@ def vanilla_options(schema, vanilla_db):
 def vanilla_criteria(schema, vanilla_db):
     return vanilla_table(schema, vanilla_db,
                          "campaign_group_member_criteria_culture_settlement_occupation_options_tables")
+
+
+@pytest.fixture(scope="session")
+def vanilla_bundles(schema, vanilla_db):
+    return vanilla_table(schema, vanilla_db, "effect_bundles_tables")
+
+
+@pytest.fixture(scope="session")
+def vanilla_junctions(schema, vanilla_db):
+    return vanilla_table(schema, vanilla_db, "effect_bundles_to_effects_junctions_tables")
+
+
+@pytest.fixture(scope="session")
+def vanilla_cultures(schema, vanilla_db):
+    return vanilla_table(schema, vanilla_db, "cultures_tables")

@@ -19,6 +19,13 @@ _ZEROED = (
 )
 
 
+ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
+BUNDLE_KEY = "permraze_block_occupation"
+BUNDLE_TITLE = "Стёрто навсегда"
+BUNDLE_DESCRIPTION = "Эти руины уничтожены окончательно. Здесь больше никто не сможет поселиться."
+FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
+
+
 def _empty_like(table):
     return Table(table.name, table.version, table.guid, list(table.fields), [])
 
@@ -53,3 +60,35 @@ def make_option_clones(options, criteria):
                 new_criteria.rows.append(copy)
         ids.append(new_id)
     return new_options, new_criteria, ids
+
+
+def make_bundle_tables(bundles, junctions):
+    """Clone Archaon's permanent block-occupation bundle under our own key."""
+    new_bundles, new_junctions = _empty_like(bundles), _empty_like(junctions)
+    for row in bundles.rows:
+        if row[bundles.col("key")] == ARCHAON_BUNDLE_KEY:
+            clone = list(row)
+            clone[bundles.col("key")] = BUNDLE_KEY
+            clone[bundles.col("localised_title")] = BUNDLE_TITLE
+            clone[bundles.col("localised_description")] = BUNDLE_DESCRIPTION
+            new_bundles.rows.append(clone)
+    for row in junctions.rows:
+        if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
+            clone = list(row)
+            clone[junctions.col("effect_bundle_key")] = BUNDLE_KEY
+            new_junctions.rows.append(clone)
+    return new_bundles, new_junctions
+
+
+def make_loc(option_ids):
+    entries = [("culture_settlement_occupation_options_tooltip_%d" % i, TITLE + "||" + DESCRIPTION)
+               for i in option_ids]
+    entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, BUNDLE_TITLE))
+    entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, BUNDLE_DESCRIPTION))
+    return entries
+
+
+def cultures_with_look(cultures):
+    """Culture keys that have their own campaign devastation look."""
+    key, look = cultures.col("key"), cultures.col("devastation_state")
+    return sorted(r[key] for r in cultures.rows if r[look])
