@@ -8,9 +8,9 @@
 |---|---|
 | **Game** | Total War: WARHAMMER III, update 9.0 (Lords of the End Times) |
 | **Cultures** | all, except Nagash's Undead Legions |
-| **Languages** | all 13 game languages out of the box, plus optional translation patches |
+| **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 75 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 83 automated tests (pack/db encoding, generated options, the campaign script) |
 
 *Русская версия ниже.*
 
@@ -26,12 +26,11 @@
 - No corruption, no climate change, no faction bonuses. The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
 - Human players only: the AI never gets a permanent block from it.
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
-- Speaks every game language out of the box: the button reads **"Raze: Scorched Earth"** and the ruins say **"Cannot Colonise"**, both built from the game's own translations. Optional translation patches swap in the full texts ("Raze Forever" with a proper tooltip).
+- Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
 
 ## Install
 
-1. Subscribe to (or copy into `data/`) **`permanent_raze.pack`** — the mod itself. It already shows its texts in your game language.
-2. Optional: also enable the translation patch for your language, **`permanent_raze_<lang>.pack`** (`en`, `ru`, `ge`, `fr`, `it`, `sp`, `pl`, `cz`, `tr`, `br`, `kr`, `cn`, `zh`), for the full texts. Its `!`-prefixed loc file overrides the main pack's.
+Subscribe to (or copy into `data/`) **`permanent_raze.pack`** and enable it in the launcher.
 
 Safe to add to a running campaign. **Do not remove it mid-campaign**: saves reference the mod's effect bundle and may fail to load, and erased ruins could become settleable again.
 
@@ -89,12 +88,11 @@ The mod's code, scripts and texts are released under the [MIT License](LICENSE) 
 - Ни скверны, ни смены климата, ни бонусов. Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
 - Только для игроков: ИИ вечный запрет не получает.
 - Совместим с путём «Разрушителя» у Архаона: провинцию опустошает и засчитывает его собственная механика.
-- Сразу говорит на языке игры: кнопка называется **«Разрушить: Выжженная земля»**, а на руинах написано **«Колонизация невозможна»**. Обе строки собраны из официальных переводов игры. Необязательные языковые патчи заменяют их полными текстами («Стереть навсегда» с подробной подсказкой).
+- Работает на любом языке игры: кнопка называется **«Разрушить: Выжженная земля»**, по официальным переводам игры.
 
 ### Установка
 
-1. Основной мод **`permanent_raze.pack`**. Он уже показывает тексты на языке игры.
-2. По желанию: русский патч **`permanent_raze_ru.pack`** с полными текстами (патчи есть для всех языков игры). Включить вместе с основным модом.
+Подпишитесь на мод (или положите **`permanent_raze.pack`** в папку `data`) и включите его в лаунчере.
 
 Можно добавлять в идущую кампанию. **Не удаляйте мод посреди кампании**: сохранение может не загрузиться, а стёртые руины могут снова стать заселяемыми.
 
