@@ -23,6 +23,9 @@ ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
 BUNDLE_KEY = "permraze_block_occupation"
 BUNDLE_TITLE = "Стёрто навсегда"
 BUNDLE_DESCRIPTION = "Эти руины уничтожены окончательно. Здесь больше никто не сможет поселиться."
+ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
+EFFECT_KEY = "permraze_effect_block_occupation"
+EFFECT_DESCRIPTION = "Руины стёрты навсегда: регион нельзя занять или заселить"
 FALLBACK_LOOK_CULTURE = "wh_main_chs_chaos"
 
 
@@ -85,8 +88,21 @@ def make_bundle_tables(bundles, junctions):
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
             clone = list(row)
             clone[junctions.col("effect_bundle_key")] = BUNDLE_KEY
+            clone[junctions.col("effect_key")] = EFFECT_KEY
             new_junctions.rows.append(clone)
     return new_bundles, new_junctions
+
+
+def make_effect_tables(effects, bonus_values):
+    """Our own copy of Archaon's block-occupation effect, so the ruins don't claim Chaos razed them."""
+    new_effects, new_bonus = _empty_like(effects), _empty_like(bonus_values)
+    for source, target in ((effects, new_effects), (bonus_values, new_bonus)):
+        for row in source.rows:
+            if row[source.col("effect")] == ARCHAON_EFFECT_KEY:
+                clone = list(row)
+                clone[source.col("effect")] = EFFECT_KEY
+                target.rows.append(clone)
+    return new_effects, new_bonus
 
 
 def make_loc(option_ids):
@@ -94,6 +110,7 @@ def make_loc(option_ids):
                for i in option_ids]
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, BUNDLE_TITLE))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, BUNDLE_DESCRIPTION))
+    entries.append(("effects_description_" + EFFECT_KEY, EFFECT_DESCRIPTION))
     return entries
 
 

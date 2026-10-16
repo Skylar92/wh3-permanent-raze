@@ -6,7 +6,8 @@ import shutil
 import sys
 
 from tools.dbtable import decode_table, encode_table, load_schema
-from tools.generate import cultures_with_look, make_bundle_tables, make_loc, make_option_clones
+from tools.generate import (cultures_with_look, make_bundle_tables, make_effect_tables, make_loc,
+                            make_option_clones)
 from tools.loc import encode_loc
 from tools.packfile import read_pack, write_pack
 from tools.paths import GAME_DATA, ROOT, SCHEMA
@@ -20,6 +21,8 @@ CRITERIA = "campaign_group_member_criteria_culture_settlement_occupation_options
 BUNDLES = "effect_bundles_tables"
 JUNCTIONS = "effect_bundles_to_effects_junctions_tables"
 CULTURES = "cultures_tables"
+EFFECTS = "effects_tables"
+EFFECT_BONUS = "effect_bonus_value_basic_junction_tables"
 
 
 def build(out_path):
@@ -31,10 +34,11 @@ def build(out_path):
 
     options, criteria, ids = make_option_clones(table(OPTIONS), table(CRITERIA))
     bundles, junctions = make_bundle_tables(table(BUNDLES), table(JUNCTIONS))
+    effects, effect_bonus = make_effect_tables(table(EFFECTS), table(EFFECT_BONUS))
     template = (ROOT / "src" / SCRIPT_PATH).read_text(encoding="utf-8")
 
     files = {f"db/{t.name}/{TABLE_FILE}": encode_table(schema, t)
-             for t in (options, criteria, bundles, junctions)}
+             for t in (options, criteria, bundles, junctions, effects, effect_bonus)}
     files[f"text/db/{TABLE_FILE}.loc"] = encode_loc(make_loc(ids))
     files[SCRIPT_PATH] = render_script(template, ids, cultures_with_look(table(CULTURES))).encode("utf-8")
     write_pack(out_path, files)

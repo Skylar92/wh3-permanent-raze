@@ -1,6 +1,6 @@
 import pytest
 
-from tools.generate import BUNDLE_KEY, cultures_with_look, make_bundle_tables, make_loc
+from tools.generate import BUNDLE_KEY, EFFECT_KEY, cultures_with_look, make_bundle_tables, make_effect_tables, make_loc
 
 
 @pytest.mark.game
@@ -11,7 +11,7 @@ def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     assert b.rows[0][b.col("bundle_target")] == "region"
     assert b.rows[0][b.col("localised_title")] == "Стёрто навсегда"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")]) for r in j.rows] == \
-           [("permraze_block_occupation", "wh3_dlc29_effect_chs_archaon_block_occupation", "region_to_region_own")]
+           [("permraze_block_occupation", "permraze_effect_block_occupation", "region_to_region_own")]
 
 
 def test_loc_keys():
@@ -27,3 +27,11 @@ def test_cultures_with_look(vanilla_cultures):
     looks = cultures_with_look(vanilla_cultures)
     assert "wh_main_chs_chaos" in looks and "wh2_main_skv_skaven" in looks
     assert "wh_main_emp_empire" not in looks
+
+
+@pytest.mark.game
+def test_own_effect_with_same_bonus(vanilla_effects, vanilla_effect_bonus):
+    assert EFFECT_KEY == "permraze_effect_block_occupation"
+    e, bonus = make_effect_tables(vanilla_effects, vanilla_effect_bonus)
+    assert [(r[e.col("effect")], r[e.col("icon")]) for r in e.rows] ==            [("permraze_effect_block_occupation", "blocked_ruins.png")]
+    assert [(r[bonus.col("effect")], r[bonus.col("bonus_value_id")]) for r in bonus.rows] ==            [("permraze_effect_block_occupation", "block_region_occupation")]
