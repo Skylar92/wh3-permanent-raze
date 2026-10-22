@@ -103,7 +103,8 @@ end
 
 -- Signed effect value for a corruption type, or nil when nothing should be applied.
 local function signed_value(effect, strength, settings)
-	local value = strength * settings.multiplier / 100
+	-- Whole numbers only: the engine's handling of fractional corruption is unknown.
+	local value = math.floor(strength * settings.multiplier / 100 + 0.5)
 	if effect == "none" or not EFFECT_KEYS[effect] or value <= 0 then
 		return nil
 	end

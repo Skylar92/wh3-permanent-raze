@@ -389,6 +389,28 @@ def test_other_ritual_ignored(g):
     assert g.permraze.persistent.daemon_gods[PRINCE] is None
 
 
+def failing_refresh(g):
+    g.lua.execute("permraze_corruption.refresh = function() error('boom') end")
+
+
+def test_refresh_error_does_not_break_erase(g):
+    failing_refresh(g)
+    first_tick(g)
+    decide(g, "r1"); raze(g, "r1")
+    assert calls(g) == ERASE_R1
+    messages = list(g.OUT.values())
+    assert any("corruption refresh failed" in m and "boom" in m for m in messages)
+
+
+def test_listeners_registered_when_refresh_throws_in_init(g):
+    failing_refresh(g)
+    g.permraze.persistent.erased["r9"] = True
+    first_tick(g)
+    events = {l.event for l in g.LISTENERS.values()}
+    assert {"CharacterPerformsSettlementOccupationDecision", "CharacterRazedSettlement", "WorldStartRound"} <= events
+    assert g.permraze.persistent.erased["r9"].order == 0
+
+
 def test_without_corruption_module_no_error():
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(MOCK)

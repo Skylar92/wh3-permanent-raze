@@ -121,8 +121,13 @@ function permraze:migrate_erased()
 end
 
 function permraze:refresh_corruption()
-	if type(permraze_corruption) == "table" then
-		permraze_corruption:refresh(self.persistent)
+	local ok, err = pcall(function()
+		if type(permraze_corruption) == "table" then
+			permraze_corruption:refresh(self.persistent)
+		end
+	end)
+	if not ok then
+		out("Permanent Raze: corruption refresh failed: " .. tostring(err))
 	end
 end
 
@@ -183,9 +188,6 @@ function permraze:look_for(culture_key)
 end
 
 function permraze:init()
-	self:migrate_erased()
-	self:refresh_corruption()
-
 	core:add_listener(
 		"permraze_occupation_decision",
 		"CharacterPerformsSettlementOccupationDecision",
@@ -251,6 +253,10 @@ function permraze:init()
 		end,
 		true
 	)
+
+	-- Last on purpose: nothing in here may stop the listeners above from registering.
+	self:migrate_erased()
+	self:refresh_corruption()
 end
 
 cm:add_first_tick_callback(

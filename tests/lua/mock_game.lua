@@ -94,7 +94,9 @@ function cm:create_new_custom_effect_bundle(key)
 	function bundle:set_duration(d) self.duration = d end
 	return bundle
 end
+APPLIED_BUNDLES = {}
 function cm:apply_custom_effect_bundle_to_region(bundle, region)
+	APPLIED_BUNDLES[#APPLIED_BUNDLES + 1] = bundle
 	local rk = region:name()
 	for _, e in ipairs(bundle.effects) do rec("apply_custom", bundle.key, rk, e[1], e[2], e[3]) end
 	REGION_BUNDLES[rk] = REGION_BUNDLES[rk] or {}
@@ -150,4 +152,5 @@ function fire(event, context)
 	end
 end
 
-function out() end
+OUT = {}
+function out(s) OUT[#OUT + 1] = s end

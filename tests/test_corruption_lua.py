@@ -206,6 +206,33 @@ def test_multiplier_scales(g):
         ["apply_custom", RUIN_KEY, "r1", "wh3_main_effect_corruption_chaos_events_bad", SCOPE, 10]]
 
 
+def test_applied_bundles_are_permanent(g):
+    set_mct(g, {"mode": "per_settlement"})
+    refresh(g, erased(g, r1=(CHAOS, 1), r2=(EMPIRE, 2)))
+    durations = [b.duration for b in g.APPLIED_BUNDLES.values()]
+    assert durations == [0, 0]
+
+
+def test_fractional_value_rounds_half_up(g):
+    set_mct(g, {"mode": "per_settlement", "multiplier": 150})
+    refresh(g, erased(g, r1=(CHAOS, 1)))
+    assert calls(g, "apply_custom") == [
+        ["apply_custom", RUIN_KEY, "r1", "wh3_main_effect_corruption_chaos_events_bad", SCOPE, 8]]
+
+
+def test_value_rounding_to_zero_applies_nothing(g):
+    set_mct(g, {"mode": "per_settlement", "ruin_strength": 1, "multiplier": 40})
+    refresh(g, erased(g, r1=(CHAOS, 1)))
+    assert calls(g, "apply_custom") == []
+
+
+def test_reduce_rounds_magnitude_then_negates(g):
+    set_mct(g, {"mode": "per_settlement", "multiplier": 150})
+    refresh(g, erased(g, r1=(EMPIRE, 1)))
+    assert calls(g, "apply_custom") == [
+        ["apply_custom", RUIN_KEY, "r1", REDUCE, SCOPE, -8]]
+
+
 def test_zero_strength_applies_nothing(g):
     set_mct(g, {"mode": "per_settlement", "multiplier": 0})
     refresh(g, erased(g, r1=(CHAOS, 1)))
