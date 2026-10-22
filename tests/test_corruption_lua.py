@@ -156,6 +156,7 @@ def test_other_daemon_faction_without_god_data_is_chaos(g):
 RUIN_KEY, PROVINCE_KEY = "permraze_ruin_corruption", "permraze_province_corruption"
 REDUCE = "wh3_main_effect_corruption_reduction_events"
 SCOPE = "region_to_province_own_unseen"
+CHAOS_EFFECT = "wh3_main_effect_corruption_chaos_events_bad"
 
 
 def to_lua(g, value):
@@ -234,7 +235,8 @@ def test_threshold_setting(g):
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(CHAOS, 2)))
     assert calls(g, "apply_custom") == []
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(CHAOS, 2), r3=(CHAOS, 3)))
-    assert len(calls(g, "apply_custom")) == 1
+    assert calls(g, "apply_custom") == [
+        ["apply_custom", PROVINCE_KEY, "r3", CHAOS_EFFECT, SCOPE, 30]]
 
 
 def test_province_majority_faction(g):
@@ -244,9 +246,11 @@ def test_province_majority_faction(g):
     assert calls(g, "apply_custom")[0][2] == "r3"
     g.CALLS = g.lua.table()
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(MORS, 2)))
-    last = calls(g, "apply_custom")[-1]
-    assert last[3] == "wh3_main_effect_corruption_skaven_events_bad"
-    assert last[2] == "r2"
+    assert calls(g, "apply_custom")[-1] == [
+        "apply_custom", PROVINCE_KEY, "r2", "wh3_main_effect_corruption_skaven_events_bad", SCOPE, 30]
+    g.CALLS = g.lua.table()
+    refresh(g, erased(g, r1=(MORS, 1), r2=(CHAOS, 2)))
+    assert calls(g, "apply_custom") == [["apply_custom", PROVINCE_KEY, "r2", CHAOS_EFFECT, SCOPE, 30]]
 
 
 def test_vanilla_devastation_blocks_province(g):
@@ -256,14 +260,17 @@ def test_vanilla_devastation_blocks_province(g):
     assert calls(g, "apply_custom") == []
     set_mct(g, {"mode": "per_settlement"})
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(CHAOS, 2)))
-    assert len(calls(g, "apply_custom")) == 2
+    assert calls(g, "apply_custom")[-2:] == [
+        ["apply_custom", RUIN_KEY, "r1", CHAOS_EFFECT, SCOPE, 5],
+        ["apply_custom", RUIN_KEY, "r2", CHAOS_EFFECT, SCOPE, 5],
+    ]
 
 
 def test_own_scorched_earth_keeps_province_corruption(g):
     g.ACTIVE_AREAS["area_p1"] = True
     set_mct(g, {"mode": "per_province"})
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(CHAOS, 2)), devastated={"p1": True})
-    assert len(calls(g, "apply_custom")) == 1
+    assert calls(g, "apply_custom") == [["apply_custom", PROVINCE_KEY, "r2", CHAOS_EFFECT, SCOPE, 30]]
 
 
 def test_refresh_twice_no_duplicates(g):
@@ -297,5 +304,9 @@ def test_switch_mode_moves_bundles(g):
 
 def test_missing_state_tables_are_empty(g):
     set_mct(g, {"mode": "per_province"})
+    # state with only `erased`: no devastated_provinces, no daemon_gods
     refresh(g, erased(g, r1=(CHAOS, 1), r2=(CHAOS, 2)))
+    assert calls(g, "apply_custom") == [["apply_custom", PROVINCE_KEY, "r2", CHAOS_EFFECT, SCOPE, 30]]
+    # entirely empty state
+    g.permraze_corruption.refresh(g.permraze_corruption, g.lua.table())
     assert len(calls(g, "apply_custom")) == 1
