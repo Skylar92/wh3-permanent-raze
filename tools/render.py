@@ -1,6 +1,8 @@
 """Embed generated data into the Lua campaign script template."""
 
-from tools.corruption import DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, FACTION_OVERRIDES, campaign_defaults
+from tools.corruption import (DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE, EFFECT_VALUES, FACTION_OVERRIDES,
+                              campaign_defaults, effect_key)
+from tools.generate import PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY
 
 OPTION_IDS_PLACEHOLDER = "{} --@@OPTION_IDS@@"
 LOOK_CULTURES_PLACEHOLDER = "{} --@@LOOK_CULTURES@@"
@@ -56,4 +58,8 @@ def render_corruption_script(template):
         "FACTION_OVERRIDES": FACTION_OVERRIDES,
         "DAEMONS_CULTURE": DAEMONS_CULTURE,
         "DAEMON_PRINCE_FACTION": DAEMON_PRINCE_FACTION,
+        "RUIN_BUNDLE": RUIN_BUNDLE_KEY,
+        "PROVINCE_BUNDLE": PROVINCE_BUNDLE_KEY,
+        "EFFECT_SCOPE": EFFECT_SCOPE,
+        "EFFECT_KEYS": {v: effect_key(v) for v in EFFECT_VALUES if v != "none"},
     })

@@ -7,6 +7,7 @@ SAVE_CALLBACKS = {}
 LOAD_CALLBACKS = {}
 ABANDONED = {}
 ACTIVE_AREAS = {}
+REGION_BUNDLES = {}
 
 local function rec(...) CALLS[#CALLS + 1] = {...} end
 
@@ -42,6 +43,7 @@ make_region = function(key)
 		settlement = function() return { region_key = key } end,
 		province = function() return make_province(REGION_PROVINCE[key]) end,
 		event_area_name = function() return REGION_AREA[key] end,
+		has_effect_bundle = function(_, k) return (REGION_BUNDLES[key] or {})[k] == true end,
 	}
 end
 
@@ -84,6 +86,22 @@ function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end
 function cm:apply_effect_bundle_to_region(b, r, t) rec("apply_effect_bundle_to_region", b, r, t) end
+function cm:create_new_custom_effect_bundle(key)
+	local bundle = { key = key, effects = {} }
+	function bundle:add_effect(effect, scope, value) self.effects[#self.effects + 1] = { effect, scope, value } end
+	function bundle:set_duration(d) self.duration = d end
+	return bundle
+end
+function cm:apply_custom_effect_bundle_to_region(bundle, region)
+	local rk = region:name()
+	for _, e in ipairs(bundle.effects) do rec("apply_custom", bundle.key, rk, e[1], e[2], e[3]) end
+	REGION_BUNDLES[rk] = REGION_BUNDLES[rk] or {}
+	REGION_BUNDLES[rk][bundle.key] = true
+end
+function cm:remove_effect_bundle_from_region(k, rk)
+	rec("remove_bundle", k, rk)
+	if REGION_BUNDLES[rk] then REGION_BUNDLES[rk][k] = nil end
+end
 function cm:reset_settlement_type(s, t, l) rec("reset_settlement_type", s.region_key, t, l) end
 function cm:set_settlement_devastated_state(s, st) rec("set_settlement_devastated_state", s.region_key, st) end
 function cm:is_campaign_map_event_area_activated_in_region(rk) return ACTIVE_AREAS[REGION_AREA[rk]] == true end
