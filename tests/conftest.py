@@ -54,3 +54,8 @@ def vanilla_effects(schema, vanilla_db):
 @pytest.fixture(scope="session")
 def vanilla_effect_bonus(schema, vanilla_db):
     return vanilla_table(schema, vanilla_db, "effect_bonus_value_basic_junction_tables")
+
+
+@pytest.fixture(scope="session")
+def vanilla_factions(schema, vanilla_db):
+    return vanilla_table(schema, vanilla_db, "factions_tables")
