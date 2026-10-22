@@ -1,5 +1,8 @@
 import pytest
+from lupa.lua51 import LuaRuntime
 
+from test_corruption_lua import MOCK
+from test_permraze_lua import OUR_ID, decide, raze
 from tools.build import build, main
 from tools.dbtable import decode_table
 from tools.loc import decode_loc
@@ -26,7 +29,8 @@ def built(tmp_path_factory):
 
 def test_pack_contents(built):
     assert set(built) == {f"db/{t}/permanent_raze" for t in TABLES} | {
-        "text/db/permanent_raze.loc", "script/campaign/mod/permraze.lua"}
+        "text/db/permanent_raze.loc", "script/campaign/mod/permraze.lua",
+        "script/campaign/mod/permraze_corruption.lua", "script/mct/settings/permraze.lua"}
 
 
 @pytest.mark.parametrize("name,rows", TABLES.items())
@@ -50,6 +54,28 @@ def test_main_loc_uses_vanilla_translations(built):
     assert keys["culture_settlement_occupation_options_tooltip_2100500000"].startswith(
         "{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}")
 
+
+
+def test_built_scripts_have_no_placeholders(built):
+    lua_files = {n: b for n, b in built.items() if n.endswith(".lua")}
+    assert len(lua_files) == 3
+    for name, data in lua_files.items():
+        assert "--@@" not in data.decode("utf-8"), name
+
+
+def test_built_corruption_script_runs(built):
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    lua.execute(MOCK)
+    for name in ("permraze", "permraze_corruption"):
+        lua.execute(built[f"script/campaign/mod/{name}.lua"].decode("utf-8"))
+    g = lua.globals()
+    g.lua = lua
+    for f in g.FIRST_TICK.values():
+        f()
+    decide(g, "r1"); raze(g, "r1")
+    assert g.permraze.persistent.erased.r1.order == 1
+    names = [c[1] for c in g.CALLS.values()]
+    assert "apply_custom" not in names and "remove_bundle" not in names
 
 
 def test_main_writes_only_the_mod_and_its_preview(tmp_path):
