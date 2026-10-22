@@ -53,6 +53,10 @@ local FACTIONS = {
 	wh_main_vmp_vampire_counts = { culture = "wh_main_vmp_vampire_counts" },
 	wh2_dlc11_cst_pirates = { culture = "wh2_dlc11_cst_vampire_coast" },
 	wh3_main_kho_vassal = { culture = "wh3_main_kho_khorne", master = "wh_main_chs_chaos" },
+	wh2_main_def_cult_of_pleasure = { culture = "wh2_main_def_dark_elves" },
+	wh3_dlc29_chs_host_of_the_triplets = { culture = "wh_main_chs_chaos" },
+	wh3_main_dae_daemon_prince = { culture = "wh3_main_dae_daemons" },
+	wh2_main_def_naggarond = { culture = "wh2_main_def_dark_elves" },
 }
 
 local function null_interface() return { is_null_interface = function() return true end } end
@@ -71,7 +75,10 @@ function make_faction(key)
 	}
 end
 
+SAVED_VALUES = {}
+
 cm = {}
+function cm:get_saved_value(k) return SAVED_VALUES[k] end
 function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end

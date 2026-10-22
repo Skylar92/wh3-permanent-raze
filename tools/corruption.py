@@ -96,3 +96,11 @@ def effect_key(value: str) -> str:
     if value in CORRUPTION_TYPES:
         return f"wh3_main_effect_corruption_{value}_events_bad"
     raise ValueError(f"no corruption effect for {value!r}")
+
+
+def campaign_defaults() -> dict:
+    """Every MCT option key with its default value; shared by the Lua script and the MCT page."""
+    defaults = dict(SETTINGS_DEFAULTS)
+    for culture, value in CULTURE_DEFAULTS.items():
+        defaults["culture_" + culture] = value
+    return defaults

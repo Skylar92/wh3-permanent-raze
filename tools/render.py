@@ -1,5 +1,7 @@
 """Embed generated data into the Lua campaign script template."""
 
+from tools.corruption import DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, FACTION_OVERRIDES, campaign_defaults
+
 OPTION_IDS_PLACEHOLDER = "{} --@@OPTION_IDS@@"
 LOOK_CULTURES_PLACEHOLDER = "{} --@@LOOK_CULTURES@@"
 
@@ -44,4 +46,14 @@ def render_script(template, option_ids, look_cultures):
     return fill_placeholders(template, {
         "OPTION_IDS": {str(i): True for i in option_ids},
         "LOOK_CULTURES": dict(look_cultures),
+    })
+
+
+def render_corruption_script(template):
+    """Fill every placeholder of the corruption script template."""
+    return fill_placeholders(template, {
+        "DEFAULTS": campaign_defaults(),
+        "FACTION_OVERRIDES": FACTION_OVERRIDES,
+        "DAEMONS_CULTURE": DAEMONS_CULTURE,
+        "DAEMON_PRINCE_FACTION": DAEMON_PRINCE_FACTION,
     })
