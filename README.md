@@ -21,7 +21,7 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 83 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 136 automated tests (pack/db encoding, generated options, the campaign script) |
 
 *Русская версия ниже.*
 
@@ -34,10 +34,21 @@
   - Skaven blight: Skaven;
   - Nagash's dead land: Vampire Counts, Vampire Coast;
   - everyone else (Empire, Bretonnia, Dwarfs, Kislev, Cathay, elves, Lizardmen, Greenskins, Ogres, Tomb Kings…) leaves the land as it is.
-- No corruption, no climate change, no faction bonuses. The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
+- By default no corruption, no climate change, no faction bonuses. With the optional [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) erased ruins can spread the destroyer's corruption or cleanse it (see below). The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
 - Human players only: the AI never gets a permanent block from it.
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
 - Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
+
+## Optional: corruption settings (MCT)
+
+Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) nothing changes: no corruption, exactly as before. With it, the **permraze** settings page lets erased ruins spread the destroyer's corruption or cleanse it.
+
+- **Mode:** Off (default) / per settlement / per province.
+- **Strength:** ruin 5 (default), province 30 (the same as Archaon's devastated province), multiplier 100% (0–300%).
+- **Province threshold:** more than 50% of the province's settlements by default; only ruins erased with Raze Forever count.
+- **By culture:** each culture has a dropdown: nothing / cleanse (Untainted) / spread a corruption type. Defaults: Chaos factions, Daemons, Norsca, Beastmen and Chaos Dwarfs spread Chaos Undivided; Khorne, Nurgle, Slaanesh and Tzeentch spread their own god's corruption; Skaven spread Skaven corruption; Vampire Counts and Vampire Coast spread Vampiric corruption; Empire, Bretonnia, Dwarfs, Kislev, Cathay, High Elves, Wood Elves and Lizardmen cleanse; Dark Elves, Greenskins, Ogres and Tomb Kings do nothing.
+- **Fixed exceptions:** Morathi spreads Slaanesh, the Glottkin (Host of the Triplets) spread Nurgle. An option (off by default) makes a Daemon Prince follow the god they ascended to.
+- Settings are per campaign and can be changed mid-campaign; all ruins are recalculated when you do. Human players only. Province mode does not stack on provinces the game itself has already devastated (Archaon, endgames).
 
 ## Install
 
@@ -67,6 +78,7 @@ python -m tools.build
 
 - `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
+- `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
 - `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 
 ### Texts
@@ -95,10 +107,21 @@ The mod's code, scripts and texts are released under the [MIT License](LICENSE) 
 - Кнопка есть у всех культур, кроме Легионов Нежити Нагаша: опустошение и так их суть.
 - Руины выглядят опустошёнными и закрыты для заселения встроенным в движок запретом, а не трюком «ИИ туда не ходит».
 - Когда больше половины поселений провинции в руинах, земля выгорает, но только у тех, кому это по лору: хаосная пустошь у Хаоса, его богов, Демонов, Зверолюдов, Норски и Гномов Хаоса; скавенская у Скавенов; мёртвая земля Нагаша у Вампиров и Вампирского побережья. У остальных земля не меняется.
-- Ни скверны, ни смены климата, ни бонусов. Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
+- По умолчанию ни скверны, ни смены климата, ни бонусов. С необязательным [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) стёртые руины могут распространять скверну разрушителя или очищать землю (см. ниже). Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
 - Только для игроков: ИИ вечный запрет не получает.
 - Совместим с путём «Разрушителя» у Архаона: провинцию опустошает и засчитывает его собственная механика.
 - Работает на любом языке игры: кнопка называется **«Разрушить: Выжженная земля»**, по официальным переводам игры.
+
+### Необязательно: настройки скверны (MCT)
+
+Без [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) ничего не меняется: скверны нет, как и раньше. С ним на странице настроек **permraze** стёртые руины могут распространять скверну разрушителя или очищать землю.
+
+- **Режим:** выкл. (по умолчанию) / по поселению / по провинции.
+- **Сила:** руина 5 (по умолчанию), провинция 30 (как у опустошённой провинции Архаона), множитель 100% (0–300%).
+- **Порог провинции:** по умолчанию больше 50% поселений провинции; считаются только руины, стёртые через «Стереть навсегда».
+- **По культурам:** у каждой культуры список: ничего / очищать («Незапятнанность») / распространять тип скверны. По умолчанию: Хаос, Демоны, Норска, Зверолюды и Гномы Хаоса распространяют скверну Хаоса неделимого; Кхорн, Нургл, Слаанеш и Тзинч свою; Скавены скавенскую; Графства Вампиров и Вампирское побережье вампирскую; Империя, Бретония, Гномы, Кислев, Катай, Высшие эльфы, Лесные эльфы и Ящеролюды очищают; Тёмные эльфы, Зеленокожие, Огры и Короли гробниц ничего не делают.
+- **Исключения:** Морати распространяет Слаанеш, Глоттки («Племя Тройняшек») Нургла. Отдельная настройка (по умолчанию выкл.) заставляет Принца демонов следовать богу, к которому он вознёсся.
+- Настройки действуют на кампанию и меняются посреди неё; все руины при этом пересчитываются. Только для игроков. Режим провинции не складывается с провинциями, которые игра уже опустошила сама (Архаон, эндгейм).
 
 ### Установка
 
