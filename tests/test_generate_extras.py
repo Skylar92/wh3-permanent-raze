@@ -9,7 +9,7 @@ from tools.texts import VANILLA_TEXTS
 def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     b, j = make_bundle_tables(vanilla_bundles, vanilla_junctions)
     assert BUNDLE_KEY == "permraze_block_occupation"
-    assert [r[b.col("key")] for r in b.rows][0] == "permraze_block_occupation"
+    assert [r[b.col("key")] for r in b.rows] == [BUNDLE_KEY, RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY]
     assert b.rows[0][b.col("bundle_target")] == "region"
     assert b.rows[0][b.col("localised_title")] == "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")]) for r in j.rows] == \

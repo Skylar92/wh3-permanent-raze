@@ -34,3 +34,13 @@ def test_fill_placeholders_requires_exactly_one():
         fill_placeholders("x = 1", {"A": 1})
     with pytest.raises(ValueError):
         fill_placeholders("{} --@@A@@\n{} --@@A@@", {"A": 1})
+
+
+def test_lua_literal_string_newlines():
+    assert lua_literal("a\nb\rc\0") == '"a\\nb\\rc\\0"'
+
+
+def test_lua_literal_rejects_inf_and_nan():
+    for bad in (float("inf"), float("-inf"), float("nan")):
+        with pytest.raises(ValueError):
+            lua_literal(bad)
