@@ -1,6 +1,7 @@
 """Embed generated data into the Lua campaign script template."""
 
-from tools.corruption import (DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE, EFFECT_VALUES, FACTION_OVERRIDES,
+from tools.corruption import (CORRUPTION_TYPES, CULTURE_DEFAULTS, DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE,
+                              EFFECT_VALUES, FACTION_OVERRIDES, MCT_TEXTS, RU_PROBE, SETTINGS_DEFAULTS, SLIDERS,
                               campaign_defaults, effect_key)
 from tools.generate import PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY
 
@@ -62,4 +63,22 @@ def render_corruption_script(template):
         "PROVINCE_BUNDLE": PROVINCE_BUNDLE_KEY,
         "EFFECT_SCOPE": EFFECT_SCOPE,
         "EFFECT_KEYS": {v: effect_key(v) for v in EFFECT_VALUES if v != "none"},
+    })
+
+
+UNTAINTED_KEY = "uied_component_texts_localised_string_region_corruption_untainted_Tooltip_40058"
+
+
+def render_mct_settings(template):
+    """Fill every placeholder of the MCT settings template."""
+    return fill_placeholders(template, {
+        "DEFAULTS": SETTINGS_DEFAULTS,
+        "SLIDERS": SLIDERS,
+        "CULTURES": list(CULTURE_DEFAULTS),
+        "CULTURE_DEFAULTS": CULTURE_DEFAULTS,
+        "EFFECT_VALUES": list(EFFECT_VALUES),
+        "TYPE_NAME_KEYS": {t: "pooled_resources_display_name_wh3_main_corruption_" + t for t in CORRUPTION_TYPES},
+        "UNTAINTED_KEY": UNTAINTED_KEY,
+        "TEXTS": MCT_TEXTS,
+        "RU_PROBE": list(RU_PROBE),
     })

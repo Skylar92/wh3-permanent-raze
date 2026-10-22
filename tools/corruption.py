@@ -63,6 +63,8 @@ EFFECT_SCOPE = "region_to_province_own_unseen"
 # text key: (English, Russian)
 MCT_TEXTS = {
     "mod_title": ("Raze Forever", "Стереть навсегда"),
+    "mod_description": ("Erased ruins can spread or cleanse corruption. Settings apply per campaign.",
+                        "Стёртые руины могут распространять или снимать скверну. Настройки действуют для кампании."),
     "section_general": ("General", "Общие"),
     "section_cultures": ("Effect of erased ruins by culture", "Эффект руин по культурам"),
     "mode_label": ("Corruption mode", "Режим скверны"),
