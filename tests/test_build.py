@@ -1,8 +1,8 @@
 import pytest
 from lupa.lua51 import LuaRuntime
 
-from test_corruption_lua import MOCK
-from test_permraze_lua import OUR_ID, decide, raze
+from test_corruption_lua import MOCK, set_mct
+from test_permraze_lua import decide, raze
 from tools.build import build, main
 from tools.dbtable import decode_table
 from tools.loc import decode_loc
@@ -63,19 +63,40 @@ def test_built_scripts_have_no_placeholders(built):
         assert "--@@" not in data.decode("utf-8"), name
 
 
-def test_built_corruption_script_runs(built):
+def built_game(built):
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(MOCK)
     for name in ("permraze", "permraze_corruption"):
         lua.execute(built[f"script/campaign/mod/{name}.lua"].decode("utf-8"))
     g = lua.globals()
-    g.lua = lua
+    g.lua = lua  # set_mct installs its get_mct() through it
     for f in g.FIRST_TICK.values():
         f()
-    decide(g, "r1"); raze(g, "r1")
+    return g
+
+
+def erase_r1(g):
+    decide(g, "r1")
+    raze(g, "r1")
+
+
+def test_built_corruption_script_runs(built):
+    g = built_game(built)
+    erase_r1(g)
+    rows = [[c[i] for i in range(1, len(c) + 1)] for c in g.CALLS.values()]
+    assert ["apply_effect_bundle_to_region", "permraze_block_occupation", "r1", 0] in rows
     assert g.permraze.persistent.erased.r1.order == 1
-    names = [c[1] for c in g.CALLS.values()]
-    assert "apply_custom" not in names and "remove_bundle" not in names
+    assert not [r for r in rows if r[0] in ("apply_custom", "remove_bundle")]
+
+
+def test_built_corruption_script_refreshes_with_mct(built):
+    g = built_game(built)
+    set_mct(g, {"mode": "per_settlement"})
+    erase_r1(g)
+    rows = [[c[i] for i in range(1, len(c) + 1)] for c in g.CALLS.values()]
+    assert [r for r in rows if r[0] == "apply_custom"] == [[
+        "apply_custom", "permraze_ruin_corruption", "r1",
+        "wh3_main_effect_corruption_reduction_events", "region_to_province_own_unseen", -5]]
 
 
 def test_main_writes_only_the_mod_and_its_preview(tmp_path):
