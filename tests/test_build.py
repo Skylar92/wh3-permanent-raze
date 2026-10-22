@@ -10,7 +10,7 @@ pytestmark = pytest.mark.game
 TABLES = {
     "culture_settlement_occupation_options_tables": 48,
     "campaign_group_member_criteria_culture_settlement_occupation_options_tables": 1,
-    "effect_bundles_tables": 1,
+    "effect_bundles_tables": 3,
     "effect_bundles_to_effects_junctions_tables": 1,
     "effects_tables": 1,
     "effect_bonus_value_basic_junction_tables": 1,
@@ -36,7 +36,7 @@ def test_tables_decode_back(built, schema, name, rows):
 
 def test_loc_has_every_option(built):
     keys = dict(decode_loc(built["text/db/permanent_raze.loc"]))
-    assert len(keys) == 51
+    assert len(keys) == 53
     assert "culture_settlement_occupation_options_tooltip_2100500047" in keys
 
 

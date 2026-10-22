@@ -26,6 +26,9 @@ ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
 BUNDLE_KEY = "permraze_block_occupation"
 ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
 EFFECT_KEY = "permraze_effect_block_occupation"
+CORRUPTION_SOURCE_KEY = "wh3_main_bundle_corruption_chaos_high_reduction"
+RUIN_BUNDLE_KEY = "permraze_ruin_corruption"
+PROVINCE_BUNDLE_KEY = "permraze_province_corruption"
 
 
 def _empty_like(table):
@@ -83,6 +86,7 @@ def make_bundle_tables(bundles, junctions):
             clone[bundles.col("localised_title")] = VANILLA_TEXTS["bundle_title"]
             clone[bundles.col("localised_description")] = VANILLA_TEXTS["bundle_description"]
             new_bundles.rows.append(clone)
+    new_bundles.rows.extend(make_corruption_bundles(bundles))
     for row in junctions.rows:
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
             clone = list(row)
@@ -90,6 +94,19 @@ def make_bundle_tables(bundles, junctions):
             clone[junctions.col("effect_key")] = EFFECT_KEY
             new_junctions.rows.append(clone)
     return new_bundles, new_junctions
+
+
+def make_corruption_bundles(bundles):
+    """Base rows for the runtime custom bundles that carry corruption; effects are added at runtime."""
+    source = next(r for r in bundles.rows if r[bundles.col("key")] == CORRUPTION_SOURCE_KEY)
+    rows = []
+    for key in (RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY):
+        clone = list(source)
+        clone[bundles.col("key")] = key
+        clone[bundles.col("localised_title")] = VANILLA_TEXTS["title"]
+        clone[bundles.col("localised_description")] = ""
+        rows.append(clone)
+    return rows
 
 
 def make_effect_tables(effects, bonus_values):
@@ -113,6 +130,8 @@ def make_loc(option_ids):
     entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(texts)) for i in option_ids]
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))
+    for key in (RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY):
+        entries.append(("effect_bundles_localised_title_" + key, texts["title"]))
     entries.append(("effects_description_" + EFFECT_KEY, texts["effect_description"]))
     return entries
 

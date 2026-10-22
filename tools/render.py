@@ -4,19 +4,34 @@ OPTION_IDS_PLACEHOLDER = "{} --@@OPTION_IDS@@"
 LOOK_CULTURES_PLACEHOLDER = "{} --@@LOOK_CULTURES@@"
 
 
-def _lua_set(keys):
-    return "{" + ", ".join('["%s"] = true' % k for k in keys) + "}"
+def lua_literal(value):
+    """Render a Python value as a Lua literal: dict -> table with string keys, list -> array table."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, str):
+        return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if isinstance(value, dict):
+        return "{" + ", ".join("[%s] = %s" % (lua_literal(str(k)), lua_literal(v)) for k, v in value.items()) + "}"
+    if isinstance(value, (list, tuple)):
+        return "{" + ", ".join(lua_literal(v) for v in value) + "}"
+    raise TypeError("cannot render %r as a Lua literal" % (value,))
 
 
-def _lua_map(mapping):
-    return "{" + ", ".join('["%s"] = "%s"' % item for item in mapping.items()) + "}"
+def fill_placeholders(template, values):
+    """Replace each `{} --@@NAME@@` in the template with the Lua literal of values[NAME]."""
+    for name, value in values.items():
+        placeholder = "{} --@@%s@@" % name
+        if template.count(placeholder) != 1:
+            raise ValueError("template must contain exactly one " + placeholder)
+        template = template.replace(placeholder, lua_literal(value))
+    return template
 
 
 def render_script(template, option_ids, look_cultures):
     """look_cultures: {culture key: culture whose devastation look it uses}."""
-    for placeholder in (OPTION_IDS_PLACEHOLDER, LOOK_CULTURES_PLACEHOLDER):
-        if template.count(placeholder) != 1:
-            raise ValueError("template must contain exactly one " + placeholder)
-    return (template
-            .replace(OPTION_IDS_PLACEHOLDER, _lua_set(str(i) for i in option_ids))
-            .replace(LOOK_CULTURES_PLACEHOLDER, _lua_map(look_cultures)))
+    return fill_placeholders(template, {
+        "OPTION_IDS": {str(i): True for i in option_ids},
+        "LOOK_CULTURES": dict(look_cultures),
+    })
