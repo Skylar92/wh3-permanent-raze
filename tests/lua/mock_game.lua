@@ -8,6 +8,7 @@ LOAD_CALLBACKS = {}
 ABANDONED = {}
 ACTIVE_AREAS = {}
 REGION_BUNDLES = {}
+HUMANS = { "wh_main_emp_empire" }
 
 local function rec(...) CALLS[#CALLS + 1] = {...} end
 
@@ -84,6 +85,7 @@ cm = {}
 function cm:get_saved_value(k) return SAVED_VALUES[k] end
 function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
+function cm:get_human_factions() return HUMANS end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end
 function cm:apply_effect_bundle_to_region(b, r, t) rec("apply_effect_bundle_to_region", b, r, t) end
 function cm:create_new_custom_effect_bundle(key)

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from lupa.lua51 import LuaRuntime
 
+from test_corruption_lua import load_corruption, set_mct
 from tools.render import render_script
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,6 +43,7 @@ def g():
     lua.execute(render_script(TEMPLATE, [int(OUR_ID)], LOOK_CULTURES))
     g = lua.globals()
     g.lua = lua
+    load_corruption(g)
     return g
 
 
@@ -74,7 +76,8 @@ def test_human_decision_then_razed_erases(g):
     decide(g, "r1")
     raze(g, "r1")
     assert calls(g) == ERASE_R1
-    assert g.permraze.persistent.erased["r1"] is True
+    assert g.permraze.persistent.erased["r1"].faction == EMPIRE
+    assert g.permraze.persistent.erased["r1"].order == 1
 
 
 def test_razed_before_decision_still_erases(g):
@@ -166,7 +169,7 @@ def test_save_load_roundtrip(g):
     g.SAVE_CALLBACKS[1](ctx)
     g.permraze.persistent = None
     g.LOAD_CALLBACKS[1](ctx)
-    assert g.permraze.persistent.erased["r1"] is True
+    assert g.permraze.persistent.erased["r1"].faction == EMPIRE
 
 
 def test_load_without_saved_state(g):
@@ -174,6 +177,7 @@ def test_load_without_saved_state(g):
     p = g.permraze.persistent
     assert p.erased is not None and p.pending is not None
     assert p.razed is not None and p.devastated_provinces is not None
+    assert p.daemon_gods is not None
     assert calls(g) == []  # no script_error from load_named_value
 
 
@@ -236,3 +240,163 @@ def test_other_faction_devastates_while_archaon_is_destroyer(g):
 def test_unknown_faction_still_erases_region(g):
     decide(g, "r1", faction="no_such_faction"); raze(g, "r1", faction="no_such_faction")
     assert calls(g)[:4] == ERASE_R1
+
+
+def first_tick(g):
+    for f in g.FIRST_TICK.values():
+        f()
+
+
+def erased_entry(g, region):
+    e = g.permraze.persistent.erased[region]
+    return dict(faction=e.faction, order=e.order)
+
+
+def apply_customs(g):
+    return [c for c in calls(g) if c[0] == "apply_custom"]
+
+
+def test_erase_order_increments(g):
+    for r in ("r1", "r2", "r3"):
+        decide(g, r); raze(g, r)
+    assert [g.permraze.persistent.erased[r].order for r in ("r1", "r2", "r3")] == [1, 2, 3]
+
+
+def test_erase_order_after_migrated_entries(g):
+    g.permraze.persistent.erased["r1"] = g.lua.table_from({"order": 0})
+    decide(g, "r2"); raze(g, "r2")
+    assert g.permraze.persistent.erased["r2"].order == 1
+
+
+def test_migrate_single_human(g):
+    g.permraze.persistent.erased["r1"] = True
+    g.permraze.persistent.erased["r2"] = True
+    g.permraze.migrate_erased(g.permraze)
+    assert erased_entry(g, "r1") == {"faction": EMPIRE, "order": 0}
+    assert erased_entry(g, "r2") == {"faction": EMPIRE, "order": 0}
+
+
+def test_migrate_leaves_new_entries_alone(g):
+    decide(g, "r1", faction=SKAVEN_FACTION); raze(g, "r1", faction=SKAVEN_FACTION)
+    g.permraze.migrate_erased(g.permraze)
+    assert erased_entry(g, "r1") == {"faction": SKAVEN_FACTION, "order": 1}
+
+
+def test_migrate_two_humans_no_faction(g):
+    g.HUMANS = g.lua.table_from([EMPIRE, SKAVEN_FACTION])
+    set_mct(g, {"mode": "per_settlement"})
+    g.permraze.persistent.erased["r1"] = True
+    first_tick(g)
+    assert g.permraze.persistent.erased["r1"].faction is None
+    assert g.permraze.persistent.erased["r1"].order == 0
+    assert apply_customs(g) == []
+
+
+def test_first_tick_migrates_then_refreshes(g):
+    set_mct(g, {"mode": "per_settlement"})
+    g.permraze.persistent.erased["r1"] = True
+    first_tick(g)
+    assert erased_entry(g, "r1") == {"faction": EMPIRE, "order": 0}
+    assert [c[1:3] for c in apply_customs(g)] == [("permraze_ruin_corruption", "r1")]
+
+
+def test_save_load_keeps_faction_and_gods(g):
+    decide(g, "r1", faction=SKAVEN_FACTION); raze(g, "r1", faction=SKAVEN_FACTION)
+    g.permraze.persistent.daemon_gods["wh3_main_dae_daemon_prince"] = "nurgle"
+    ctx = g.lua.table()
+    g.SAVE_CALLBACKS[1](ctx)
+    g.permraze.persistent = None
+    g.LOAD_CALLBACKS[1](ctx)
+    assert erased_entry(g, "r1") == {"faction": SKAVEN_FACTION, "order": 1}
+    assert g.permraze.persistent.daemon_gods["wh3_main_dae_daemon_prince"] == "nurgle"
+
+
+def test_erase_triggers_refresh(g):
+    set_mct(g, {"mode": "per_settlement"})
+    decide(g, "r1"); raze(g, "r1")
+    assert apply_customs(g) == [("apply_custom", "permraze_ruin_corruption", "r1",
+                                 "wh3_main_effect_corruption_reduction_events",
+                                 "region_to_province_own_unseen", -5)]
+
+
+def test_archaon_path_still_refreshes(g):
+    g.lua.execute(ARCHAON_NARRATIVE % '"destroyer"')
+    set_mct(g, {"mode": "per_settlement"})
+    decide(g, "r1", faction=ARCHAON); raze(g, "r1", faction=ARCHAON)
+    assert activations(g) == []
+    assert [c[2] for c in apply_customs(g)] == ["r1"]
+
+
+def test_null_faction_path_still_refreshes(g):
+    set_mct(g, {"mode": "per_settlement"})
+    decide(g, "r1", faction="no_such_faction"); raze(g, "r1", faction="no_such_faction")
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert apply_customs(g) == []  # unknown faction: effect "none", but refresh ran without error
+
+
+def test_refresh_runs_after_province_devastation(g):
+    set_mct(g, {"mode": "per_province"})
+    for r in ("r1", "r2"):
+        decide(g, r, faction=VAMPIRES); raze(g, r, faction=VAMPIRES)
+    # our own scorched earth is active in the province, so its corruption must stay
+    assert activations(g) != []
+    assert [c[2] for c in apply_customs(g)] == ["r2"]
+
+
+def test_mct_finalized_refreshes(g):
+    first_tick(g)
+    decide(g, "r1"); raze(g, "r1")
+    assert apply_customs(g) == []
+    set_mct(g, {"mode": "per_settlement"})
+    g.fire("MctFinalized", None)
+    assert [c[2] for c in apply_customs(g)] == ["r1"]
+
+
+RITUAL = """
+function make_ritual_context(key, human, faction_name)
+    return {
+        ritual = function() return { ritual_key = function() return key end } end,
+        performing_faction = function()
+            return { is_human = function() return human end, name = function() return faction_name end }
+        end,
+    }
+end
+"""
+PRINCE = "wh3_main_dae_daemon_prince"
+
+
+def test_dae_ritual_records_god(g):
+    first_tick(g)
+    g.lua.execute(RITUAL)
+    set_mct(g, {"mode": "per_settlement", "daemon_follow_god": True})
+    decide(g, "r1", faction=PRINCE); raze(g, "r1", faction=PRINCE)
+    g.fire("RitualCompletedEvent", g.make_ritual_context("wh3_main_ritual_dae_ascend_nurgle", True, PRINCE))
+    assert g.permraze.persistent.daemon_gods[PRINCE] == "nurgle"
+    assert apply_customs(g)[-1][3] == "wh3_main_effect_corruption_nurgle_events_bad"
+
+
+def test_ai_ritual_ignored(g):
+    first_tick(g)
+    g.lua.execute(RITUAL)
+    g.fire("RitualCompletedEvent", g.make_ritual_context("wh3_main_ritual_dae_ascend_nurgle", False, PRINCE))
+    assert g.permraze.persistent.daemon_gods[PRINCE] is None
+
+
+def test_other_ritual_ignored(g):
+    first_tick(g)
+    g.lua.execute(RITUAL)
+    g.fire("RitualCompletedEvent", g.make_ritual_context("wh3_main_ritual_something_else", True, PRINCE))
+    assert g.permraze.persistent.daemon_gods[PRINCE] is None
+
+
+def test_without_corruption_module_no_error():
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    lua.execute(MOCK)
+    lua.execute(render_script(TEMPLATE, [int(OUR_ID)], LOOK_CULTURES))
+    g = lua.globals()
+    g.lua = lua
+    g.permraze.persistent.erased["r9"] = True
+    first_tick(g)
+    decide(g, "r1"); raze(g, "r1")
+    g.fire("MctFinalized", None)
+    assert calls(g) == ERASE_R1
