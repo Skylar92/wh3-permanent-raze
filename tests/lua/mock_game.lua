@@ -57,6 +57,7 @@ local FACTIONS = {
 	wh3_dlc29_chs_host_of_the_triplets = { culture = "wh_main_chs_chaos" },
 	wh3_main_dae_daemon_prince = { culture = "wh3_main_dae_daemons" },
 	wh2_main_def_naggarond = { culture = "wh2_main_def_dark_elves" },
+	wh3_main_dae_daemons = { culture = "wh3_main_dae_daemons" },
 }
 
 local function null_interface() return { is_null_interface = function() return true end } end

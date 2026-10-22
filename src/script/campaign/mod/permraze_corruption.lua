@@ -81,13 +81,8 @@ function permraze_corruption:effect_for(faction_key, settings, daemon_gods)
 		local god = daemon_gods and daemon_gods[faction_key]
 		if not god and faction_key == DAEMON_PRINCE_FACTION then
 			god = cm:get_saved_value(ASCEND_SAVED_KEY)
-			if not god then
-				return "chaos"
-			end
 		end
-		if god then
-			return god_effect(god)
-		end
+		return god_effect(god or "chaos")
 	end
 
 	return settings["culture_" .. culture] or "none"

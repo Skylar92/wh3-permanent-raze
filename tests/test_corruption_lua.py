@@ -146,3 +146,8 @@ def test_daemon_prince_follows_god(g):
     assert effect(g, DAEMON_PRINCE, s) == "chaos"
     g.SAVED_VALUES = g.lua.table()
     assert effect(g, DAEMON_PRINCE, s) == "chaos"
+
+
+def test_other_daemon_faction_without_god_data_is_chaos(g):
+    set_mct(g, {"daemon_follow_god": True, "culture_wh3_main_dae_daemons": "reduce"})
+    assert effect(g, "wh3_main_dae_daemons") == "chaos"
