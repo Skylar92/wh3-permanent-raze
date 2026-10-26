@@ -12,7 +12,7 @@
   <a href="LICENSE">MIT License</a>
 </p>
 
-**Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included. It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
+**Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included (unless you turn on rebuilding in MCT). It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
 
 | | |
 |---|---|
@@ -21,14 +21,14 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 136 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 176 automated tests (pack/db encoding, generated options, the campaign script) |
 
 *Русская версия ниже.*
 
 ## Features
 
 - **Raze Forever** option after capturing a settlement, for every culture except Nagash's Undead Legions (devastation is already their whole mechanic).
-- The ruins get the vanilla "devastated" look and a permanent occupation block — the engine's own `block_region_occupation`, not an "AI won't target it" trick.
+- The ruins get the vanilla "devastated" look, a burning "Scorched Earth" icon next to their name and a permanent occupation block — the engine's own `block_region_occupation`, not an "AI won't target it" trick.
 - When more than half of a province's settlements are in ruins, the province gets the campaign devastation visuals, but only for cultures that fit:
   - Chaos wasteland: Warriors of Chaos, Khorne, Nurgle, Slaanesh, Tzeentch, Daemons of Chaos, Beastmen, Norsca, Chaos Dwarfs;
   - Skaven blight: Skaven;
@@ -38,6 +38,16 @@
 - Human players only: the AI never gets a permanent block from it.
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
 - Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
+
+## Optional: rebuilding erased ruins (MCT)
+
+Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021), tick **Players can rebuild erased ruins** on the **permraze** page to undo a mistake or bring back a settlement you need later.
+
+- Move an army into the ruins' region or a region next to it. On your turn the block is lifted from those ruins only, and the vanilla **Colonise** works at the usual cost: you get a tier 1 settlement.
+- The block comes back as soon as the army leaves, and always before the AI moves. The AI can never rebuild erased ruins.
+- Ruins stay shut for the rest of the turn they were erased in.
+- A rebuilt settlement loses the devastated look and its corruption. The scorched land goes once no more than half of the province is in ruins. It can be erased again.
+- The big burning icon on the settlement label is drawn by the game only while you cannot occupy the ruins, so it goes out where an army can rebuild; the small Scorched Earth icon next to the name stays.
 
 ## Optional: corruption settings (MCT)
 
@@ -79,7 +89,7 @@ python -m tools.build
 - `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
 - `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
-- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
+- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 
 ### Texts
 
@@ -100,17 +110,27 @@ The mod's code, scripts and texts are released under the [MIT License](LICENSE) 
 
 > *«Есть места, которым не суждено подняться снова».*
 
-**Конец света теперь не только у Архаона.** Мод для Total War: WARHAMMER III. Рядом с обычным «Разрушить» у каждой культуры появляется **«Стереть навсегда»**: поселение исчезает с карты, и руины больше никто и никогда не сможет занять или заселить, включая самого игрока. Это тот же вечный запрет, что у Архаона на пути «Повелителя Конца Времён», только для всех фракций.
+**Конец света теперь не только у Архаона.** Мод для Total War: WARHAMMER III. Рядом с обычным «Разрушить» у каждой культуры появляется **«Стереть навсегда»**: поселение исчезает с карты, и руины больше никто и никогда не сможет занять или заселить, включая самого игрока (если не включить восстановление в MCT). Это тот же вечный запрет, что у Архаона на пути «Повелителя Конца Времён», только для всех фракций.
 
 ### Что делает
 
 - Кнопка есть у всех культур, кроме Легионов Нежити Нагаша: опустошение и так их суть.
-- Руины выглядят опустошёнными и закрыты для заселения встроенным в движок запретом, а не трюком «ИИ туда не ходит».
+- Руины выглядят опустошёнными, рядом с названием горит значок «Выжженная земля», а заселение закрыто встроенным в движок запретом, а не трюком «ИИ туда не ходит».
 - Когда больше половины поселений провинции в руинах, земля выгорает, но только у тех, кому это по лору: хаосная пустошь у Хаоса, его богов, Демонов, Зверолюдов, Норски и Гномов Хаоса; скавенская у Скавенов; мёртвая земля Нагаша у Вампиров и Берега Вампиров. У остальных земля не меняется.
 - По умолчанию ни скверны, ни смены климата, ни бонусов. С необязательным [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) стёртые руины могут распространять скверну разрушителя или очищать землю (см. ниже). Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
 - Только для игроков: ИИ вечный запрет не получает.
 - Совместим с путём «Разрушителя» у Архаона: провинцию опустошает и засчитывает его собственная механика.
 - Работает на любом языке игры: кнопка называется **«Разрушить: Выжженная земля»**, по официальным переводам игры.
+
+### Необязательно: восстановление стёртых руин (MCT)
+
+По умолчанию выключено. С [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) отметьте **«Игрок может восстанавливать стёртые руины»** на странице **permraze**, чтобы исправить ошибку или вернуть поселение, которое понадобилось позже.
+
+- Приведите армию в регион руин или в соседний. В ваш ход запрет снимается только с этих руин, и работает обычная **«Колонизировать»** за обычную цену: получаете поселение 1-го уровня.
+- Запрет возвращается, как только армия уходит, и всегда до хода ИИ. ИИ стёртые руины не восстанавливает никогда.
+- До конца хода, в котором руины стёрли, они закрыты.
+- Восстановленное поселение теряет опустошённый вид и скверну. Выжженная земля уходит, когда в руинах остаётся не больше половины провинции. Поселение можно стереть снова.
+- Большой горящий значок на подписи поселения игра рисует, только пока вы не можете занять руины, поэтому там, где армия может восстановить, он гаснет; маленький значок «Выжженная земля» рядом с названием остаётся.
 
 ### Необязательно: настройки скверны (MCT)
 
