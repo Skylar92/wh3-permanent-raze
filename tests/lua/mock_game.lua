@@ -9,12 +9,14 @@ ABANDONED = {}
 ACTIVE_AREAS = {}
 REGION_BUNDLES = {}
 HUMANS = { "wh_main_emp_empire" }
+ARMIES = {}  -- [faction_key] = { region_key or false (at sea), ... }
 
 local function rec(...) CALLS[#CALLS + 1] = {...} end
 
 local PROVINCE_REGIONS = { p1 = {"r1", "r2", "r3"}, p9 = {"r9"} }
 local REGION_PROVINCE = { r1 = "p1", r2 = "p1", r3 = "p1", r9 = "p9" }
 local REGION_AREA = { r1 = "area_p1", r2 = "area_p1", r3 = "area_p1", r9 = "" }
+local ADJACENT = { r1 = {"r9"}, r9 = {"r1"} }
 
 local function list(items)
 	return {
@@ -45,6 +47,11 @@ make_region = function(key)
 		province = function() return make_province(REGION_PROVINCE[key]) end,
 		event_area_name = function() return REGION_AREA[key] end,
 		has_effect_bundle = function(_, k) return (REGION_BUNDLES[key] or {})[k] == true end,
+		adjacent_region_list = function()
+			local items = {}
+			for _, rk in ipairs(ADJACENT[key] or {}) do items[#items + 1] = make_region(rk) end
+			return list(items)
+		end,
 	}
 end
 
@@ -76,18 +83,39 @@ function make_faction(key)
 			if data.master then return make_faction(data.master) end
 			return null_interface()
 		end,
+		military_force_list = function()
+			local forces = {}
+			for _, rk in ipairs(ARMIES[key] or {}) do
+				local character = {
+					has_region = function() return rk ~= false end,
+					region = function() return make_region(rk) end,
+				}
+				forces[#forces + 1] = {
+					has_general = function() return true end,
+					general_character = function() return character end,
+				}
+			end
+			return list(forces)
+		end,
 	}
 end
 
 SAVED_VALUES = {}
 
 cm = {}
+TURN = 1
+function cm:model() return { turn_number = function() return TURN end } end
 function cm:get_saved_value(k) return SAVED_VALUES[k] end
 function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
 function cm:get_human_factions() return HUMANS end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end
-function cm:apply_effect_bundle_to_region(b, r, t) rec("apply_effect_bundle_to_region", b, r, t) end
+function cm:cai_enable_targeting_against_settlement(s) rec("cai_enable_targeting_against_settlement", s) end
+function cm:apply_effect_bundle_to_region(b, r, t)
+	rec("apply_effect_bundle_to_region", b, r, t)
+	REGION_BUNDLES[r] = REGION_BUNDLES[r] or {}
+	REGION_BUNDLES[r][b] = true
+end
 function cm:create_new_custom_effect_bundle(key)
 	local bundle = { key = key, effects = {} }
 	function bundle:add_effect(effect, scope, value) self.effects[#self.effects + 1] = { effect, scope, value } end
@@ -110,6 +138,7 @@ function cm:reset_settlement_type(s, t, l) rec("reset_settlement_type", s.region
 function cm:set_settlement_devastated_state(s, st) rec("set_settlement_devastated_state", s.region_key, st) end
 function cm:is_campaign_map_event_area_activated_in_region(rk) return ACTIVE_AREAS[REGION_AREA[rk]] == true end
 function cm:activate_campaign_map_event_area(a, c) rec("activate_campaign_map_event_area", a, c); ACTIVE_AREAS[a] = true end
+function cm:deactivate_campaign_map_event_area(a) rec("deactivate_campaign_map_event_area", a); ACTIVE_AREAS[a] = nil end
 function cm:kill_character(...) rec("kill_character") end
 function cm:override_settlement_climate(...) rec("override_settlement_climate") end
 function cm:add_first_tick_callback(f) FIRST_TICK[#FIRST_TICK + 1] = f end

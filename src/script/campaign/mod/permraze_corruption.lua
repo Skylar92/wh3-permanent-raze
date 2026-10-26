@@ -143,6 +143,16 @@ local function province_faction(entries)
 	return best
 end
 
+-- Removes the corruption bundles of a ruin that is no longer erased.
+function permraze_corruption:clear(region_key)
+	local region = cm:get_region(region_key)
+	for _, bundle_key in ipairs({ RUIN_BUNDLE, PROVINCE_BUNDLE }) do
+		if region:has_effect_bundle(bundle_key) then
+			cm:remove_effect_bundle_from_region(bundle_key, region_key)
+		end
+	end
+end
+
 -- Rebuilds the corruption bundles of every permanently erased ruin from `state`
 -- (permraze.persistent): erased, devastated_provinces, daemon_gods.
 function permraze_corruption:refresh(state)

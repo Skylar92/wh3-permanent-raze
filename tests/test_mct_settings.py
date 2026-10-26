@@ -81,7 +81,7 @@ def test_registers_permraze(mod):
 
 
 def test_general_options_match_defaults(mod):
-    types = {"mode": "dropdown", "daemon_follow_god": "checkbox"}
+    types = {"mode": "dropdown", "daemon_follow_god": "checkbox", "allow_rebuild": "checkbox"}
     for key, default in SETTINGS_DEFAULTS.items():
         o = opt(mod, key)
         assert o.type == types.get(key, "slider"), key

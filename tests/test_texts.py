@@ -9,6 +9,7 @@ def test_vanilla_texts_are_composites():
     assert set(VANILLA_TEXTS) == set(FIELDS)
     assert VANILLA_TEXTS["title"] == ("{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}: "
                                       "{{tr:effect_bundles_localised_title_wh2_dlc11_noctilus_war_raiding}}")
+    assert VANILLA_TEXTS["marker_title"] == "{{tr:effect_bundles_localised_title_wh2_dlc11_noctilus_war_raiding}}"
     assert VANILLA_TEXTS["bundle_title"] == "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
 
 

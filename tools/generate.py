@@ -24,6 +24,9 @@ _ZEROED = (
 
 ARCHAON_BUNDLE_KEY = "wh3_dlc29_chs_archaon_block_occupation"
 BUNDLE_KEY = "permraze_block_occupation"
+# Effect-less burning-ruins icon next to the settlement name, shown to everyone. The engine's own icon on the
+# label follows the block only for the viewing faction, so it goes out while a player may rebuild.
+MARKER_BUNDLE_KEY = "permraze_erased_marker"
 ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
 EFFECT_KEY = "permraze_effect_block_occupation"
 CORRUPTION_SOURCE_KEY = "wh3_main_bundle_corruption_chaos_high_reduction"
@@ -77,7 +80,7 @@ def make_option_clones(options, criteria):
 
 
 def make_bundle_tables(bundles, junctions):
-    """Clone Archaon's permanent block-occupation bundle under our own key."""
+    """Clone Archaon's permanent block-occupation bundle under our own key, plus the erased-ruins marker."""
     new_bundles, new_junctions = _empty_like(bundles), _empty_like(junctions)
     for row in bundles.rows:
         if row[bundles.col("key")] == ARCHAON_BUNDLE_KEY:
@@ -85,7 +88,13 @@ def make_bundle_tables(bundles, junctions):
             clone[bundles.col("key")] = BUNDLE_KEY
             clone[bundles.col("localised_title")] = VANILLA_TEXTS["bundle_title"]
             clone[bundles.col("localised_description")] = VANILLA_TEXTS["bundle_description"]
-            new_bundles.rows.append(clone)
+            marker = list(clone)
+            marker[bundles.col("key")] = MARKER_BUNDLE_KEY
+            marker[bundles.col("localised_title")] = VANILLA_TEXTS["marker_title"]
+            marker[bundles.col("localised_description")] = ""
+            marker[bundles.col("show_in_3d_space")] = True
+            marker[bundles.col("owner_only")] = False
+            new_bundles.rows.extend([clone, marker])
     new_bundles.rows.extend(make_corruption_bundles(bundles))
     for row in junctions.rows:
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
@@ -130,6 +139,7 @@ def make_loc(option_ids):
     entries = [("culture_settlement_occupation_options_tooltip_%d" % i, _tooltip(texts)) for i in option_ids]
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))
+    entries.append(("effect_bundles_localised_title_" + MARKER_BUNDLE_KEY, texts["marker_title"]))
     for key in (RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY):
         entries.append(("effect_bundles_localised_title_" + key, texts["title"]))
     entries.append(("effects_description_" + EFFECT_KEY, texts["effect_description"]))

@@ -11,6 +11,19 @@
 --	no bonuses, and corruption only when enabled in MCT (see
 --	permraze_corruption.lua; off by default).
 --
+--	Rebuilding (MCT option, off by default): during a human turn our block is
+--	lifted only from ruins whose region, or a region next to it, holds a
+--	human army, so the vanilla Colonise button works there
+--	while every other erased ruin keeps its burning icon (the engine draws it
+--	only when the viewing faction cannot occupy). It comes back when the army
+--	leaves and on the first non-human turn. The AI only acts in its own turn,
+--	so only players can rebuild. Ruins stay shut for the rest of the turn
+--	they were erased in, or the army that erased them would reopen them.
+--	A marker bundle keeps a burning icon next to the name of every erased
+--	ruin, lifted or not.
+--	A colonised ruin is no longer erased and loses its devastated look, and
+--	the scorched land goes once no more than half the province is in ruins.
+--
 ------------------------------------------------------------------------------
 
 -- Filled in by tools/build.py: our occupation option ids, and for each culture
@@ -19,8 +32,10 @@ local OPTION_IDS = {} --@@OPTION_IDS@@
 local LOOK_CULTURES = {} --@@LOOK_CULTURES@@
 
 local BUNDLE_KEY = "permraze_block_occupation"
+local MARKER_KEY = "permraze_erased_marker"
 local SETTLEMENT_TYPE = "wh3_dlc29_devastated"
 local SETTLEMENT_STATE = "devastated"
+local REBUILT_STATE = "none"
 local SAVE_KEY = "permraze"
 local ASCEND_PREFIX = "wh3_main_ritual_dae_ascend_"
 
@@ -28,9 +43,10 @@ local function new_state()
 	return {
 		pending = {},              -- [region_key] = faction_key: our option chosen, raze not seen yet
 		razed = {},                -- [region_key] = faction_key: human raze seen, decision not seen yet
-		erased = {},               -- [region_key] = {faction = faction_key, order = n}; order 0 = erased before we tracked it
+		erased = {},               -- [region_key] = {faction = faction_key, order = n, turn = n}; order 0 = erased before we tracked it
 		devastated_provinces = {}, -- [province_key] = true
 		daemon_gods = {},          -- [faction_key] = god suffix of the last wh3_main_ritual_dae_ascend_<god>
+		lifted = {},               -- [region_key] = true: block taken off while a human army stands there
 	}
 end
 
@@ -67,6 +83,152 @@ function permraze:clear_turn_state()
 	self.persistent.razed = {}
 end
 
+-- Settings live in the corruption script, which reads every MCT option. Off without MCT.
+function permraze:rebuild_allowed()
+	local ok, settings = pcall(function()
+		return permraze_corruption:settings()
+	end)
+	if not ok or type(settings) ~= "table" or type(settings.allow_rebuild) ~= "boolean" then
+		return false
+	end
+	return settings.allow_rebuild
+end
+
+local function sorted_keys(t)
+	local keys = {}
+	for key in pairs(t) do
+		keys[#keys + 1] = key
+	end
+	table.sort(keys)
+	return keys
+end
+
+-- Regions where a human faction has an army led by a general, and the regions
+-- next to them: an army colonises ruins straight from a neighbouring region.
+function permraze:human_army_regions()
+	local regions = {}
+	for _, faction_key in ipairs(cm:get_human_factions()) do
+		local faction = cm:get_faction(faction_key)
+		if faction and not faction:is_null_interface() then
+			local forces = faction:military_force_list()
+			for i = 0, forces:num_items() - 1 do
+				local force = forces:item_at(i)
+				if force:has_general() then
+					local character = force:general_character()
+					if character:has_region() then
+						local region = character:region()
+						regions[region:name()] = true
+						local adjacent = region:adjacent_region_list()
+						for j = 0, adjacent:num_items() - 1 do
+							regions[adjacent:item_at(j):name()] = true
+						end
+					end
+				end
+			end
+		end
+	end
+	return regions
+end
+
+-- Lifts the block where a human army stands and puts it back everywhere else.
+function permraze:sync_blocks()
+	if not self:rebuild_allowed() then
+		self:restore_blocks()
+		return
+	end
+	local armies = self:human_army_regions()
+	for _, region_key in ipairs(sorted_keys(self.persistent.lifted)) do
+		if not armies[region_key] then
+			self:restore_block(region_key)
+		end
+	end
+	for _, region_key in ipairs(sorted_keys(self.persistent.erased)) do
+		if armies[region_key] and self:can_lift(region_key) then
+			cm:remove_effect_bundle_from_region(BUNDLE_KEY, region_key)
+			self.persistent.lifted[region_key] = true
+		end
+	end
+end
+
+function permraze:can_lift(region_key)
+	return not self.persistent.lifted[region_key]
+		and self.persistent.erased[region_key].turn ~= cm:model():turn_number()
+		and cm:get_region(region_key):is_abandoned()
+end
+
+function permraze:restore_block(region_key)
+	self.persistent.lifted[region_key] = nil
+	if not self.persistent.erased[region_key] then
+		return
+	end
+	if cm:get_region(region_key):is_abandoned() then
+		cm:apply_effect_bundle_to_region(BUNDLE_KEY, region_key, 0)
+	else
+		self:rebuild(region_key)
+	end
+end
+
+function permraze:restore_blocks()
+	for _, region_key in ipairs(sorted_keys(self.persistent.lifted)) do
+		self:restore_block(region_key)
+	end
+end
+
+function permraze:on_region_changed(region_key)
+	if self.persistent.erased[region_key] and not cm:get_region(region_key):is_abandoned() then
+		self:rebuild(region_key)
+	end
+end
+
+function permraze:rebuild(region_key)
+	local region = cm:get_region(region_key)
+
+	self.persistent.erased[region_key] = nil
+	self.persistent.lifted[region_key] = nil
+	cm:remove_effect_bundle_from_region(BUNDLE_KEY, region_key)
+	cm:remove_effect_bundle_from_region(MARKER_KEY, region_key)
+	cm:cai_enable_targeting_against_settlement("settlement:" .. region_key)
+	cm:set_settlement_devastated_state(region:settlement(), REBUILT_STATE)
+	out("Permanent Raze: rebuilt " .. region_key)
+
+	self:maybe_restore_province(region)
+
+	local ok, err = pcall(function()
+		if type(permraze_corruption) == "table" then
+			permraze_corruption:clear(region_key)
+		end
+	end)
+	if not ok then
+		out("Permanent Raze: corruption clear failed: " .. tostring(err))
+	end
+	self:refresh_corruption()
+end
+
+-- Only lifts scorched land we laid ourselves, by the same threshold that laid it.
+function permraze:maybe_restore_province(region)
+	local province = region:province()
+	local province_key = province:key()
+	if not self.persistent.devastated_provinces[province_key] then
+		return
+	end
+
+	local regions = province:regions()
+	local total = regions:num_items()
+	local abandoned = 0
+	for i = 0, total - 1 do
+		if regions:item_at(i):is_abandoned() then
+			abandoned = abandoned + 1
+		end
+	end
+	if abandoned >= math.floor(total / 2) + 1 then
+		return
+	end
+
+	cm:deactivate_campaign_map_event_area(region:event_area_name())
+	self.persistent.devastated_provinces[province_key] = nil
+	out("Permanent Raze: restored province " .. province_key)
+end
+
 function permraze:erase_region(region_key, faction_key)
 	self:erase_and_devastate(region_key, faction_key)
 	-- Last, on every path: it reads devastated_provinces that the step above may update.
@@ -88,10 +250,15 @@ function permraze:erase_and_devastate(region_key, faction_key)
 
 	cm:cai_disable_targeting_against_settlement("settlement:" .. region_key)
 	cm:apply_effect_bundle_to_region(BUNDLE_KEY, region_key, 0)
+	cm:apply_effect_bundle_to_region(MARKER_KEY, region_key, 0)
 	cm:reset_settlement_type(settlement, SETTLEMENT_TYPE, 1)
 	cm:set_settlement_devastated_state(settlement, SETTLEMENT_STATE)
 
-	self.persistent.erased[region_key] = { faction = faction_key, order = self:next_erase_order() }
+	self.persistent.erased[region_key] = {
+		faction = faction_key,
+		order = self:next_erase_order(),
+		turn = cm:model():turn_number(),
+	}
 	out("Permanent Raze: erased " .. region_key)
 
 	local faction = cm:get_faction(faction_key)
@@ -116,6 +283,15 @@ function permraze:migrate_erased()
 	for region_key, entry in pairs(self.persistent.erased) do
 		if type(entry) ~= "table" then
 			self.persistent.erased[region_key] = { faction = faction_key, order = 0 }
+		end
+	end
+end
+
+-- Ruins erased before the marker existed.
+function permraze:mark_erased()
+	for _, region_key in ipairs(sorted_keys(self.persistent.erased)) do
+		if not cm:get_region(region_key):has_effect_bundle(MARKER_KEY) then
+			cm:apply_effect_bundle_to_region(MARKER_KEY, region_key, 0)
 		end
 	end
 end
@@ -225,6 +401,44 @@ function permraze:init()
 		true,
 		function()
 			self:clear_turn_state()
+			self:restore_blocks()
+		end,
+		true
+	)
+
+	core:add_listener(
+		"permraze_turn_start",
+		"FactionTurnStart",
+		true,
+		function(context)
+			if context:faction():is_human() then
+				self:sync_blocks()
+			else
+				self:restore_blocks()
+			end
+		end,
+		true
+	)
+
+	core:add_listener(
+		"permraze_army_moved",
+		"CharacterFinishedMovingEvent",
+		function(context)
+			local character = context:character()
+			return character:faction():is_human() and character:has_military_force()
+		end,
+		function()
+			self:sync_blocks()
+		end,
+		true
+	)
+
+	core:add_listener(
+		"permraze_region_changed",
+		"RegionFactionChangeEvent",
+		true,
+		function(context)
+			self:on_region_changed(context:region():name())
 		end,
 		true
 	)
@@ -234,6 +448,9 @@ function permraze:init()
 		"MctFinalized",
 		true,
 		function()
+			if not self:rebuild_allowed() then
+				self:restore_blocks()
+			end
 			self:refresh_corruption()
 		end,
 		true
@@ -256,6 +473,7 @@ function permraze:init()
 
 	-- Last on purpose: nothing in here may stop the listeners above from registering.
 	self:migrate_erased()
+	self:mark_erased()
 	self:refresh_corruption()
 end
 

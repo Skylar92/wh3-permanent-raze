@@ -34,6 +34,9 @@ local function add_option(key, kind)
     return opt
 end
 
+local rebuild = add_option("allow_rebuild", "checkbox")
+rebuild:set_default_value(DEFAULTS.allow_rebuild)
+
 local mode = add_option("mode", "dropdown")
 mode:add_dropdown_values({
     {key = "off", text = T("mode_off")},

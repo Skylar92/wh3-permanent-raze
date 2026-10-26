@@ -67,6 +67,7 @@ def activations(g):
 ERASE_R1 = [
     ("cai_disable_targeting_against_settlement", "settlement:r1"),
     ("apply_effect_bundle_to_region", "permraze_block_occupation", "r1", 0),
+    ("apply_effect_bundle_to_region", "permraze_erased_marker", "r1", 0),
     ("reset_settlement_type", "r1", "wh3_dlc29_devastated", 1),
     ("set_settlement_devastated_state", "r1", "devastated"),
 ]
@@ -239,7 +240,7 @@ def test_other_faction_devastates_while_archaon_is_destroyer(g):
 
 def test_unknown_faction_still_erases_region(g):
     decide(g, "r1", faction="no_such_faction"); raze(g, "r1", faction="no_such_faction")
-    assert calls(g)[:4] == ERASE_R1
+    assert calls(g)[:len(ERASE_R1)] == ERASE_R1
 
 
 def first_tick(g):
@@ -421,4 +422,4 @@ def test_without_corruption_module_no_error():
     first_tick(g)
     decide(g, "r1"); raze(g, "r1")
     g.fire("MctFinalized", None)
-    assert calls(g) == ERASE_R1
+    assert calls(g) == [("apply_effect_bundle_to_region", "permraze_erased_marker", "r9", 0)] + ERASE_R1

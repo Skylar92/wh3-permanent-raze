@@ -40,6 +40,7 @@ DAEMONS_CULTURE = "wh3_main_dae_daemons"
 DAEMON_PRINCE_FACTION = "wh3_main_dae_daemon_prince"
 
 SETTINGS_DEFAULTS = {
+    "allow_rebuild": False,
     "mode": "off",
     "ruin_strength": 5,
     "province_strength": 30,
@@ -63,10 +64,17 @@ EFFECT_SCOPE = "region_to_province_own_unseen"
 # text key: (English, Russian)
 MCT_TEXTS = {
     "mod_title": ("Raze Forever", "Стереть навсегда"),
-    "mod_description": ("Erased ruins can spread or cleanse corruption. Settings apply per campaign.",
-                        "Стёртые руины могут распространять или снимать скверну. Настройки действуют для кампании."),
+    "mod_description": ("Optionally lets players rebuild erased ruins and lets erased ruins spread or cleanse "
+                        "corruption. Settings apply per campaign.",
+                        "По желанию: игрок может восстанавливать стёртые руины, а руины могут распространять или "
+                        "снимать скверну. Настройки действуют для кампании."),
     "section_general": ("General", "Общие"),
     "section_cultures": ("Effect of erased ruins by culture", "Эффект руин по культурам"),
+    "allow_rebuild_label": ("Players can rebuild erased ruins", "Игрок может восстанавливать стёртые руины"),
+    "allow_rebuild_tip": ("On your turn an army in or next to the ruins' region can colonise them as usual. "
+                          "The AI never can.",
+                          "В ваш ход армия в регионе руин или рядом может колонизировать их как обычно. "
+                          "ИИ не может никогда."),
     "mode_label": ("Corruption mode", "Режим скверны"),
     "mode_tip": ("When erased ruins spread corruption: never, per erased settlement, or once per province.",
                  "Когда стёртые руины распространяют скверну: никогда, за каждое поселение или за провинцию."),

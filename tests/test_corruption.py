@@ -29,7 +29,8 @@ def test_sliders_cover_numeric_defaults():
         assert lo <= SETTINGS_DEFAULTS[key] <= hi and step > 0
     assert SETTINGS_DEFAULTS["mode"] == "off"
     assert SETTINGS_DEFAULTS["daemon_follow_god"] is False
-    assert len(SETTINGS_DEFAULTS) == 6
+    assert SETTINGS_DEFAULTS["allow_rebuild"] is False
+    assert len(SETTINGS_DEFAULTS) == 7
 
 
 def test_mct_texts_have_both_languages():

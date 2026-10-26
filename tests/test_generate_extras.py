@@ -1,6 +1,6 @@
 import pytest
 
-from tools.generate import (BUNDLE_KEY, EFFECT_KEY, PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY, devastation_looks,
+from tools.generate import (BUNDLE_KEY, EFFECT_KEY, MARKER_BUNDLE_KEY, PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY, devastation_looks,
                             make_bundle_tables, make_corruption_bundles, make_effect_tables, make_loc)
 from tools.texts import VANILLA_TEXTS
 
@@ -9,7 +9,7 @@ from tools.texts import VANILLA_TEXTS
 def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     b, j = make_bundle_tables(vanilla_bundles, vanilla_junctions)
     assert BUNDLE_KEY == "permraze_block_occupation"
-    assert [r[b.col("key")] for r in b.rows] == [BUNDLE_KEY, RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY]
+    assert [r[b.col("key")] for r in b.rows] == [BUNDLE_KEY, MARKER_BUNDLE_KEY, RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY]
     assert b.rows[0][b.col("bundle_target")] == "region"
     assert b.rows[0][b.col("localised_title")] == "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")]) for r in j.rows] == \
@@ -61,6 +61,23 @@ def test_corruption_bundles_cloned(vanilla_bundles):
         for name, _ in b.fields:
             if name not in ("key", "localised_title", "localised_description"):
                 assert r[b.col(name)] == source[b.col(name)]
+
+
+@pytest.mark.game
+def test_marker_bundle_visible_to_everyone(vanilla_bundles, vanilla_junctions):
+    assert MARKER_BUNDLE_KEY == "permraze_erased_marker"
+    b, j = make_bundle_tables(vanilla_bundles, vanilla_junctions)
+    marker = b.rows[1]
+    assert marker[b.col("ui_icon")] == "blocked_ruins.png"
+    assert marker[b.col("show_in_3d_space")] is True
+    assert marker[b.col("owner_only")] is False
+    assert marker[b.col("localised_title")] == VANILLA_TEXTS["marker_title"]
+    assert MARKER_BUNDLE_KEY not in [r[j.col("effect_bundle_key")] for r in j.rows]
+
+
+def test_loc_has_marker_title():
+    loc = dict(make_loc([2100500000]))
+    assert loc["effect_bundles_localised_title_" + MARKER_BUNDLE_KEY] == VANILLA_TEXTS["marker_title"]
 
 
 def test_loc_has_corruption_bundle_titles():
