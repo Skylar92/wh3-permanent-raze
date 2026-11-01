@@ -114,7 +114,14 @@ local function signed_value(effect, strength, settings)
 	return value
 end
 
+local function log(msg)
+	if type(permraze) == "table" and type(permraze.log) == "function" then
+		permraze:log(msg)
+	end
+end
+
 local function apply_bundle(bundle_key, region_key, effect, value)
+	log("corruption " .. bundle_key .. " " .. effect .. " " .. value .. " on " .. region_key)
 	local bundle = cm:create_new_custom_effect_bundle(bundle_key)
 	bundle:add_effect(EFFECT_KEYS[effect], EFFECT_SCOPE, value)
 	bundle:set_duration(0)
@@ -145,6 +152,7 @@ end
 
 -- Removes the corruption bundles of a ruin that is no longer erased.
 function permraze_corruption:clear(region_key)
+	log("corruption cleared from " .. region_key)
 	local region = cm:get_region(region_key)
 	for _, bundle_key in ipairs({ RUIN_BUNDLE, PROVINCE_BUNDLE }) do
 		if region:has_effect_bundle(bundle_key) then
@@ -161,6 +169,9 @@ function permraze_corruption:refresh(state)
 	local daemon_gods = state.daemon_gods or {}
 	local settings = self:settings()
 	local regions = sorted_keys(erased)
+	if settings.mode ~= "off" then
+		log("corruption refresh, mode " .. tostring(settings.mode) .. ", " .. #regions .. " erased ruins")
+	end
 
 	for _, region_key in ipairs(regions) do
 		local region = cm:get_region(region_key)

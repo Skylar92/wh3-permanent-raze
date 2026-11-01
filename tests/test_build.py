@@ -14,9 +14,10 @@ TABLES = {
     "culture_settlement_occupation_options_tables": 48,
     "campaign_group_member_criteria_culture_settlement_occupation_options_tables": 1,
     "effect_bundles_tables": 4,
-    "effect_bundles_to_effects_junctions_tables": 1,
-    "effects_tables": 1,
+    "effect_bundles_to_effects_junctions_tables": 2,
+    "effects_tables": 2,
     "effect_bonus_value_basic_junction_tables": 1,
+    "effect_bonus_value_scripted_junctions_tables": 1,
 }
 
 
@@ -47,6 +48,13 @@ def test_loc_has_every_option(built):
 def test_script_has_all_ids(built):
     lua = built["script/campaign/mod/permraze.lua"].decode("utf-8")
     assert "--@@" not in lua and '["2100500047"] = true' in lua and '["wh3_dlc23_chd_chaos_dwarfs"] = "wh_main_chs_chaos"' in lua
+    assert "local FILE_LOG = false" in lua
+
+
+def test_debug_build_writes_file_log(tmp_path):
+    main(["--log"], dist=tmp_path)
+    lua = read_pack(tmp_path / "permanent_raze.pack")["script/campaign/mod/permraze.lua"].decode("utf-8")
+    assert "local FILE_LOG = true" in lua
 
 
 def test_main_loc_uses_vanilla_translations(built):

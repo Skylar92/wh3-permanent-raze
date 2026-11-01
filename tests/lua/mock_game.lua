@@ -8,6 +8,7 @@ LOAD_CALLBACKS = {}
 ABANDONED = {}
 ACTIVE_AREAS = {}
 REGION_BUNDLES = {}
+OWNERS = {}  -- [region_key] = faction_key of a non-abandoned region; human by default
 HUMANS = { "wh_main_emp_empire" }
 ARMIES = {}  -- [faction_key] = { region_key or false (at sea), ... }
 
@@ -46,6 +47,7 @@ make_region = function(key)
 		settlement = function() return { region_key = key } end,
 		province = function() return make_province(REGION_PROVINCE[key]) end,
 		event_area_name = function() return REGION_AREA[key] end,
+		owning_faction = function() return make_faction(OWNERS[key] or HUMANS[1]) end,
 		has_effect_bundle = function(_, k) return (REGION_BUNDLES[key] or {})[k] == true end,
 		adjacent_region_list = function()
 			local items = {}
@@ -68,6 +70,8 @@ local FACTIONS = {
 	wh3_main_dae_daemon_prince = { culture = "wh3_main_dae_daemons" },
 	wh2_main_def_naggarond = { culture = "wh2_main_def_dark_elves" },
 	wh3_main_dae_daemons = { culture = "wh3_main_dae_daemons" },
+	wh2_dlc09_tmb_exiles_of_nehek = { culture = "wh2_dlc09_tmb_tomb_kings" },
+	wh_main_dwf_dwarfs = { culture = "wh_main_dwf_dwarfs" },
 }
 
 local function null_interface() return { is_null_interface = function() return true end } end
@@ -79,6 +83,12 @@ function make_faction(key)
 		name = function() return key end,
 		culture = function() return data.culture end,
 		is_null_interface = function() return false end,
+		is_human = function()
+			for _, h in ipairs(HUMANS) do
+				if h == key then return true end
+			end
+			return false
+		end,
 		master = function()
 			if data.master then return make_faction(data.master) end
 			return null_interface()
@@ -134,6 +144,7 @@ function cm:remove_effect_bundle_from_region(k, rk)
 	rec("remove_bundle", k, rk)
 	if REGION_BUNDLES[rk] then REGION_BUNDLES[rk][k] = nil end
 end
+function cm:set_region_abandoned(rk) rec("set_region_abandoned", rk); ABANDONED[rk] = true end
 function cm:reset_settlement_type(s, t, l) rec("reset_settlement_type", s.region_key, t, l) end
 function cm:set_settlement_devastated_state(s, st) rec("set_settlement_devastated_state", s.region_key, st) end
 function cm:is_campaign_map_event_area_activated_in_region(rk) return ACTIVE_AREAS[REGION_AREA[rk]] == true end

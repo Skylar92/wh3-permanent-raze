@@ -8,6 +8,15 @@ MARKER = "permraze_erased_marker"
 LIFT_R1 = [("remove_bundle", BLOCK, "r1")]
 RESTORE_R1 = [("apply_effect_bundle_to_region", BLOCK, "r1", 0)]
 DWARFS = "wh_main_dwf_dwarfs"
+TOMB_KINGS = "wh2_dlc09_tmb_exiles_of_nehek"
+RESEAL_R1 = [
+    ("set_region_abandoned", "r1"),
+    ("cai_disable_targeting_against_settlement", "settlement:r1"),
+    ("apply_effect_bundle_to_region", BLOCK, "r1", 0),
+    ("apply_effect_bundle_to_region", MARKER, "r1", 0),
+    ("reset_settlement_type", "r1", "wh3_dlc29_devastated", 1),
+    ("set_settlement_devastated_state", "r1", "devastated"),
+]
 
 CONTEXTS = """
 function make_turn_context(name, human)
@@ -57,8 +66,9 @@ def move(g, human=True, has_force=True):
     g.fire("CharacterFinishedMovingEvent", g.make_move_context(human, has_force))
 
 
-def colonise(g, region):
+def colonise(g, region, owner=EMPIRE):
     g.ABANDONED[region] = None
+    g.OWNERS[region] = owner
     g.fire("RegionFactionChangeEvent", g.make_region_context(region))
 
 
@@ -319,6 +329,81 @@ def test_occupied_lifted_region_rebuilt_on_restore(g):
     assert ("apply_effect_bundle_to_region", BLOCK, "r1", 0) not in calls(g)
 
 
+def test_occupied_lifted_region_by_ai_resealed_on_restore(g):
+    erase(g, "r1")
+    setup(g)
+    army(g, "r1")
+    turn(g)
+    g.ABANDONED["r1"] = None
+    g.OWNERS["r1"] = TOMB_KINGS
+    reset_calls(g)
+    turn(g, faction=DWARFS, human=False)
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert g.permraze.persistent.lifted["r1"] is None
+    assert calls(g) == RESEAL_R1
+
+
+def test_scripted_takeover_is_undone(g):
+    """Vanilla scripts (Khorne's ruin spread and others) hand ruins over without an army, past the block."""
+    erase(g, "r1")
+    setup(g)
+    reset_calls(g)
+    colonise(g, "r1", owner=TOMB_KINGS)
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert g.ABANDONED["r1"] is True
+    assert calls(g) == RESEAL_R1
+
+
+def test_ai_takeover_of_lifted_ruin_is_undone(g):
+    erase(g, "r1")
+    setup(g)
+    army(g, "r1")
+    turn(g)
+    reset_calls(g)
+    colonise(g, "r1", owner=TOMB_KINGS)
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert g.permraze.persistent.lifted["r1"] is None
+    assert calls(g) == RESEAL_R1
+
+
+def test_human_takeover_without_lift_is_undone(g):
+    erase(g, "r1")
+    setup(g)
+    reset_calls(g)
+    colonise(g, "r1")
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert calls(g) == RESEAL_R1
+
+
+def test_takeover_with_rebuild_disabled_is_undone(g):
+    set_mct(g, {"allow_rebuild": False})
+    erase(g, "r1")
+    setup(g)
+    reset_calls(g)
+    colonise(g, "r1")
+    assert calls(g) == RESEAL_R1
+
+
+def test_round_start_undoes_silent_takeover(g):
+    erase(g, "r1")
+    setup(g)
+    g.ABANDONED["r1"] = None  # owner changed without the event reaching us
+    g.OWNERS["r1"] = TOMB_KINGS
+    reset_calls(g)
+    g.fire("WorldStartRound", g.lua.table())
+    assert g.permraze.persistent.erased["r1"] is not None
+    assert calls(g) == RESEAL_R1
+
+
+def test_reseal_keeps_scorched_land(g):
+    for r in ("r1", "r2"):
+        erase(g, r, faction=BEASTMEN)
+    setup(g)
+    colonise(g, "r1", owner=TOMB_KINGS)
+    assert named(g, "deactivate_campaign_map_event_area") == []
+    assert g.permraze.persistent.devastated_provinces["p1"] is True
+
+
 def test_rebuild_below_threshold_clears_scorched_land(g):
     for r in ("r1", "r2"):
         erase(g, r, faction=BEASTMEN)
@@ -387,3 +472,147 @@ def test_lifted_survives_save_load(g):
     reset_calls(g)
     turn(g, faction=DWARFS, human=False)
     assert calls(g) == RESTORE_R1
+
+
+def logged(g):
+    return [s.split(": ", 2)[2] for s in g.OUT.values()]
+
+
+def test_load_logs_every_erased_ruin(g):
+    erase(g, "r1")
+    erase(g, "r2")
+    g.ABANDONED["r2"] = None
+    g.OWNERS["r2"] = TOMB_KINGS
+    g.REGION_BUNDLES["r2"] = None
+    g.OUT = g.lua.table()
+    first_tick(g)
+    assert logged(g)[-3:] == [
+        "loaded, 2 erased ruins, 2 razed regions watched, 0 scorched provinces; settings allow_rebuild=false "
+        "daemon_follow_god=false mode=off multiplier=100 province_strength=30 ruin_strength=5 threshold=50",
+        "  r1 abandoned, blocked, marked",
+        "  r2 owned by wh2_dlc09_tmb_exiles_of_nehek, NOT blocked, marked",
+    ]
+
+
+def test_unfinished_decision_logged_at_round_start(g):
+    setup(g)
+    decide(g, "r1")
+    g.OUT = g.lua.table()
+    g.fire("WorldStartRound", g.lua.table())
+    assert "our option at r1 was never followed by a raze" in logged(g)
+
+
+def test_takeover_logged(g):
+    erase(g, "r1")
+    setup(g)
+    g.OUT = g.lua.table()
+    colonise(g, "r1", owner=TOMB_KINGS)
+    assert logged(g)[1:] == ["erased r1 taken by wh2_dlc09_tmb_exiles_of_nehek", "sealed again r1, abandoned now: true"]
+
+
+def change(g, region, owner, reason="colonised", previous=None):
+    g.ABANDONED[region] = None
+    g.OWNERS[region] = owner
+    g.lua.execute("""
+    function make_change_context(region, reason, previous)
+        return { region = function() return cm:get_region(region) end,
+                 reason = function() return reason end,
+                 previous_faction = function() return cm:get_faction(previous) or { is_null_interface = function() return true end } end }
+    end
+    """)
+    g.fire("RegionFactionChangeEvent", g.make_change_context(region, reason, previous))
+
+
+def test_vanilla_razed_ruin_takeover_logged(g):
+    setup(g)
+    decide(g, "r1", option="664")
+    raze(g, "r1")  # vanilla raze: no decision of ours
+    army(g, "r9", faction=DWARFS)
+    g.OUT = g.lua.table()
+    change(g, "r1", DWARFS)
+    assert logged(g) == ["owner change at r1: nobody -> wh_main_dwf_dwarfs, reason colonised, not erased, "
+                         "NOT blocked, not marked, 1 of its armies near"]
+
+
+def test_erased_ruin_takeover_logged_with_reason(g):
+    erase(g, "r1")
+    setup(g)
+    g.OUT = g.lua.table()
+    change(g, "r1", TOMB_KINGS, reason="diplomacy trade", previous=DWARFS)
+    assert logged(g)[0] == ("owner change at r1: wh_main_dwf_dwarfs -> wh2_dlc09_tmb_exiles_of_nehek, "
+                            "reason diplomacy trade, erased, blocked, marked, 0 of its armies near")
+
+
+def test_unrelated_owner_change_not_logged(g):
+    setup(g)
+    g.OUT = g.lua.table()
+    change(g, "r1", DWARFS)
+    assert logged(g) == []
+
+
+def test_round_start_puts_back_missing_block(g):
+    erase(g, "r1")
+    setup(g)
+    g.REGION_BUNDLES["r1"][BLOCK] = None
+    reset_calls(g)
+    g.OUT = g.lua.table()
+    g.fire("WorldStartRound", g.lua.table())
+    assert calls(g) == RESTORE_R1
+    assert logged(g) == ["block missing on r1, put back"]
+
+
+def test_round_start_logs_silent_owner_change(g):
+    setup(g)
+    decide(g, "r1", option="664")
+    raze(g, "r1")
+    g.ABANDONED["r1"] = None
+    g.OWNERS["r1"] = DWARFS
+    g.OUT = g.lua.table()
+    g.fire("WorldStartRound", g.lua.table())
+    g.fire("WorldStartRound", g.lua.table())
+    assert logged(g) == ["owner of r1 changed with no event seen: nobody -> wh_main_dwf_dwarfs, not erased, NOT blocked"]
+
+
+def test_seen_owner_change_not_logged_again(g):
+    setup(g)
+    decide(g, "r1", option="664")
+    raze(g, "r1")
+    change(g, "r1", DWARFS)
+    g.OUT = g.lua.table()
+    g.fire("WorldStartRound", g.lua.table())
+    assert logged(g) == []
+
+
+def test_listener_error_logged_not_raised(g):
+    setup(g)
+    g.lua.execute("function permraze:on_razed() error('boom') end")
+    g.OUT = g.lua.table()
+    g.fire("CharacterRazedSettlement", g.lua.eval("""{
+        character = function() return { faction = function() return cm:get_faction("wh_main_emp_empire") end } end,
+        garrison_residence = function() return { region = function() return cm:get_region("r1") end } end }"""))
+    assert len(logged(g)) == 1 and logged(g)[0].startswith("permraze_settlement_razed failed:")
+
+
+def test_listener_condition_error_logged(g):
+    setup(g)
+    g.OUT = g.lua.table()
+    g.fire("CharacterRazedSettlement", g.lua.table())
+    assert len(logged(g)) == 1 and logged(g)[0].startswith("permraze_settlement_razed condition failed:")
+
+
+def test_province_left_alone_logs_why(g):
+    setup(g)
+    g.OUT = g.lua.table()
+    erase(g, "r1")
+    assert "province p1 not scorched: wh_main_emp_empire has no devastation look" in logged(g)
+
+
+def test_our_decision_without_raze_still_watched(g):
+    setup(g)
+    decide(g, "r1")
+    g.ABANDONED["r1"] = None
+    g.OWNERS["r1"] = DWARFS
+    g.OUT = g.lua.table()
+    g.fire("WorldStartRound", g.lua.table())
+    assert logged(g) == ["our option at r1 was never followed by a raze",
+                         "owner of r1 changed with no event seen: unknown -> wh_main_dwf_dwarfs, not erased, NOT blocked"]

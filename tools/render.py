@@ -44,11 +44,15 @@ def fill_placeholders(template, values):
     return template
 
 
-def render_script(template, option_ids, look_cultures):
-    """look_cultures: {culture key: culture whose devastation look it uses}."""
+def render_script(template, option_ids, look_cultures, sources=None, file_log=False):
+    """look_cultures: {culture key: culture whose devastation look it uses};
+    sources: {our option id: id of the vanilla raze it copies};
+    file_log: also write permraze_log.txt (debug builds only)."""
     return fill_placeholders(template, {
         "OPTION_IDS": {str(i): True for i in option_ids},
         "LOOK_CULTURES": dict(look_cultures),
+        "SOURCE_IDS": {str(k): str(v) for k, v in (sources or {}).items()},
+        "FILE_LOG": bool(file_log),
     })
 
 

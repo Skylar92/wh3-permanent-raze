@@ -34,7 +34,7 @@
   - Skaven blight: Skaven;
   - Nagash's dead land: Vampire Counts, Vampire Coast;
   - everyone else (Empire, Bretonnia, Dwarfs, Kislev, Cathay, elves, Lizardmen, Greenskins, Ogres, Tomb Kings…) leaves the land as it is.
-- By default no corruption, no climate change, no faction bonuses. With the optional [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) erased ruins can spread the destroyer's corruption or cleanse it (see below). The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
+- By default no corruption, no climate change, no faction bonuses. With the optional [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) erased ruins can spread the destroyer's corruption or cleanse it (see below). The option costs, loots and rewards exactly like that culture's normal raze: skulls, chivalry, souls, Waaagh, forest health and the rest come along.
 - Human players only: the AI never gets a permanent block from it.
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
 - Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
@@ -86,7 +86,7 @@ python -m tools.build
 
 ### How it works
 
-- `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
+- `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, rewards and costs kept), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
 - `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
 - `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
@@ -117,7 +117,7 @@ The mod's code, scripts and texts are released under the [MIT License](LICENSE) 
 - Кнопка есть у всех культур, кроме Легионов Нежити Нагаша: опустошение и так их суть.
 - Руины выглядят опустошёнными, рядом с названием горит значок «Выжженная земля», а заселение закрыто встроенным в движок запретом, а не трюком «ИИ туда не ходит».
 - Когда больше половины поселений провинции в руинах, земля выгорает, но только у тех, кому это по лору: хаосная пустошь у Хаоса, его богов, Демонов, Зверолюдов, Норски и Гномов Хаоса; скавенская у Скавенов; мёртвая земля Нагаша у Вампиров и Берега Вампиров. У остальных земля не меняется.
-- По умолчанию ни скверны, ни смены климата, ни бонусов. С необязательным [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) стёртые руины могут распространять скверну разрушителя или очищать землю (см. ниже). Цена и добыча как у обычного разрушения, но без фракционных наград (черепа, честь, души и т.п.): они остаются у обычной кнопки.
+- По умолчанию ни скверны, ни смены климата, ни бонусов. С необязательным [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) стёртые руины могут распространять скверну разрушителя или очищать землю (см. ниже). Цена, добыча и награды как у обычного разрушения этой культуры: черепа, рыцарство, души, Waaagh, здоровье леса и прочее.
 - Только для игроков: ИИ вечный запрет не получает.
 - Совместим с путём «Разрушителя» у Архаона: провинцию опустошает и засчитывает его собственная механика.
 - Работает на любом языке игры: кнопка называется **«Разрушить: Выжженная земля»**, по официальным переводам игры.
