@@ -12,7 +12,7 @@
   <a href="LICENSE">MIT License</a>
 </p>
 
-**Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included. It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
+**Archaon is not the only one who can end the world.** This Total War: WARHAMMER III mod gives every culture a **Raze Forever** option next to the usual Raze. The settlement is wiped off the map, and its ruins can never be occupied or colonised again, by anyone, you included (unless you turn on rebuilding in MCT). It is the same permanent block Archaon uses on his Lord of the End Times path, now available to every faction.
 
 | | |
 |---|---|
@@ -21,23 +21,42 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 83 automated tests (pack/db encoding, generated options, the campaign script) |
-
-*Русская версия ниже.*
+| **Tests** | 211 automated tests (pack/db encoding, generated options, the campaign script) |
 
 ## Features
 
 - **Raze Forever** option after capturing a settlement, for every culture except Nagash's Undead Legions (devastation is already their whole mechanic).
-- The ruins get the vanilla "devastated" look and a permanent occupation block — the engine's own `block_region_occupation`, not an "AI won't target it" trick.
+- The ruins get the vanilla "devastated" look, a burning "Scorched Earth" icon next to their name and a permanent occupation block — the engine's own `block_region_occupation`, not an "AI won't target it" trick.
 - When more than half of a province's settlements are in ruins, the province gets the campaign devastation visuals, but only for cultures that fit:
   - Chaos wasteland: Warriors of Chaos, Khorne, Nurgle, Slaanesh, Tzeentch, Daemons of Chaos, Beastmen, Norsca, Chaos Dwarfs;
   - Skaven blight: Skaven;
   - Nagash's dead land: Vampire Counts, Vampire Coast;
   - everyone else (Empire, Bretonnia, Dwarfs, Kislev, Cathay, elves, Lizardmen, Greenskins, Ogres, Tomb Kings…) leaves the land as it is.
-- No corruption, no climate change, no faction bonuses. The option costs and loots exactly like that culture's normal raze, minus faction-specific raze rewards (skulls, chivalry, souls…) — those stay with the vanilla Raze.
+- By default no corruption, no climate change, no faction bonuses. With the optional [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) erased ruins can spread the destroyer's corruption or cleanse it (see below). The option costs, loots and rewards exactly like that culture's normal raze: skulls, chivalry, souls, Waaagh, forest health and the rest come along.
 - Human players only: the AI never gets a permanent block from it.
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
 - Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
+
+## Optional: rebuilding erased ruins (MCT)
+
+Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021), tick **Players can rebuild erased ruins** on the **permraze** page to undo a mistake or bring back a settlement you need later.
+
+- Move an army into the ruins' region or a region next to it. On your turn the block is lifted from those ruins only, and the vanilla **Colonise** works at the usual cost: you get a tier 1 settlement.
+- The block comes back as soon as the army leaves, and always before the AI moves. The AI can never rebuild erased ruins.
+- Ruins stay shut for the rest of the turn they were erased in.
+- A rebuilt settlement loses the devastated look and its corruption. The scorched land goes once no more than half of the province is in ruins. It can be erased again.
+- The big burning icon on the settlement label is drawn by the game only while you cannot occupy the ruins, so it goes out where an army can rebuild; the small Scorched Earth icon next to the name stays.
+
+## Optional: corruption settings (MCT)
+
+Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) nothing changes: no corruption, exactly as before. With it, the **permraze** settings page lets erased ruins spread the destroyer's corruption or cleanse it.
+
+- **Mode:** Off (default) / per settlement / per province.
+- **Strength:** ruin 5 (default), province 30 (the same as Archaon's devastated province), multiplier 100% (0–300%).
+- **Province threshold:** more than 50% of the province's settlements by default; only ruins erased with Raze Forever count.
+- **By culture:** each culture has a dropdown: nothing / cleanse (Untainted) / spread a corruption type. Defaults: Chaos factions, Daemons, Norsca, Beastmen and Chaos Dwarfs spread Chaos Undivided; Khorne, Nurgle, Slaanesh and Tzeentch spread their own god's corruption; Skaven spread Skaven corruption; Vampire Counts and Vampire Coast spread Vampiric corruption; Empire, Bretonnia, Dwarfs, Kislev, Cathay, High Elves, Wood Elves and Lizardmen cleanse; Dark Elves, Greenskins, Ogres and Tomb Kings do nothing.
+- **Fixed exceptions:** Morathi spreads Slaanesh, the Glottkin (Host of the Triplets) spread Nurgle. An option (off by default) makes a Daemon Prince follow the god they ascended to.
+- Settings are per campaign and can be changed mid-campaign; all ruins are recalculated when you do. Human players only. Province mode does not stack on provinces the game itself has already devastated (Archaon, endgames).
 
 ## Install
 
@@ -61,13 +80,14 @@ python -m pytest
 python -m tools.build
 ```
 
-`python -m tools.build` writes `dist/permanent_raze.pack` and its Workshop preview image `dist/permanent_raze.png` (drawn by `tools/preview.py`). `--install` also copies both into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
+`python -m tools.build` writes `dist/permanent_raze.pack` and its Workshop preview image `dist/permanent_raze.png` (drawn by `tools/preview.py`). `--install` also copies both into the game's `data` folder (close the game first). `--log` makes a debug build that also writes its log to `permraze_log.txt` in the game folder. Game path: `tools/paths.py`.
 
 ### How it works
 
-- `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, faction rewards stripped), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
+- `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, rewards and costs kept), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
-- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
+- `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
+- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 
 ### Texts
 

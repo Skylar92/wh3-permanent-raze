@@ -2,7 +2,7 @@
 
 # The main pack's texts, composed from strings the game already translates into every language,
 # so players without a translation patch still read their own language:
-# "Raze: Scorched Earth" on the button, "Cannot Colonise" on the ruins.
+# "Raze: Scorched Earth" on the button, "Cannot Colonise" on the ruins, "Scorched Earth" next to their name.
 _RAZE = "{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}"
 _SCORCHED_EARTH = "{{tr:effect_bundles_localised_title_wh2_dlc11_noctilus_war_raiding}}"
 _CANNOT_COLONISE = "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
@@ -10,6 +10,7 @@ _CANNOT_REOCCUPY = "{{tr:effects_description_wh3_main_effect_endgame_block_occup
 VANILLA_TEXTS = {
     "title": _RAZE + ": " + _SCORCHED_EARTH,
     "description": _CANNOT_COLONISE,
+    "marker_title": _SCORCHED_EARTH,
     "bundle_title": _CANNOT_COLONISE,
     "bundle_description": _CANNOT_REOCCUPY,
     "effect_description": _CANNOT_REOCCUPY,

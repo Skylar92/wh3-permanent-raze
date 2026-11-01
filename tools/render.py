@@ -1,22 +1,88 @@
 """Embed generated data into the Lua campaign script template."""
 
+from tools.corruption import (CORRUPTION_TYPES, CULTURE_DEFAULTS, DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE,
+                              EFFECT_VALUES, FACTION_OVERRIDES, MCT_TEXTS, RU_PROBE, SETTINGS_DEFAULTS, SLIDERS,
+                              campaign_defaults, effect_key)
+from tools.generate import PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY
+
 OPTION_IDS_PLACEHOLDER = "{} --@@OPTION_IDS@@"
 LOOK_CULTURES_PLACEHOLDER = "{} --@@LOOK_CULTURES@@"
 
 
-def _lua_set(keys):
-    return "{" + ", ".join('["%s"] = true' % k for k in keys) + "}"
+_LUA_ESCAPES = {
+    ord("\\"): "\\\\", ord('"'): '\\"', ord("\n"): "\\n", ord("\r"): "\\r", 0: "\\0",
+}
 
 
-def _lua_map(mapping):
-    return "{" + ", ".join('["%s"] = "%s"' % item for item in mapping.items()) + "}"
+def lua_literal(value):
+    """Render a Python value as a Lua literal: dict -> table with string keys, list -> array table."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, float):
+        if value != value or value in (float("inf"), float("-inf")):
+            raise ValueError("inf/nan is not a Lua literal")
+        return repr(value)
+    if isinstance(value, int):
+        return repr(value)
+    if isinstance(value, str):
+        escaped = value.translate(_LUA_ESCAPES)
+        return '"' + escaped + '"'
+    if isinstance(value, dict):
+        return "{" + ", ".join("[%s] = %s" % (lua_literal(str(k)), lua_literal(v)) for k, v in value.items()) + "}"
+    if isinstance(value, (list, tuple)):
+        return "{" + ", ".join(lua_literal(v) for v in value) + "}"
+    raise TypeError("cannot render %r as a Lua literal" % (value,))
 
 
-def render_script(template, option_ids, look_cultures):
-    """look_cultures: {culture key: culture whose devastation look it uses}."""
-    for placeholder in (OPTION_IDS_PLACEHOLDER, LOOK_CULTURES_PLACEHOLDER):
+def fill_placeholders(template, values):
+    """Replace each `{} --@@NAME@@` in the template with the Lua literal of values[NAME]."""
+    for name, value in values.items():
+        placeholder = "{} --@@%s@@" % name
         if template.count(placeholder) != 1:
             raise ValueError("template must contain exactly one " + placeholder)
-    return (template
-            .replace(OPTION_IDS_PLACEHOLDER, _lua_set(str(i) for i in option_ids))
-            .replace(LOOK_CULTURES_PLACEHOLDER, _lua_map(look_cultures)))
+        template = template.replace(placeholder, lua_literal(value))
+    return template
+
+
+def render_script(template, option_ids, look_cultures, sources=None, file_log=False):
+    """look_cultures: {culture key: culture whose devastation look it uses};
+    sources: {our option id: id of the vanilla raze it copies};
+    file_log: also write permraze_log.txt (debug builds only)."""
+    return fill_placeholders(template, {
+        "OPTION_IDS": {str(i): True for i in option_ids},
+        "LOOK_CULTURES": dict(look_cultures),
+        "SOURCE_IDS": {str(k): str(v) for k, v in (sources or {}).items()},
+        "FILE_LOG": bool(file_log),
+    })
+
+
+def render_corruption_script(template):
+    """Fill every placeholder of the corruption script template."""
+    return fill_placeholders(template, {
+        "DEFAULTS": campaign_defaults(),
+        "FACTION_OVERRIDES": FACTION_OVERRIDES,
+        "DAEMONS_CULTURE": DAEMONS_CULTURE,
+        "DAEMON_PRINCE_FACTION": DAEMON_PRINCE_FACTION,
+        "RUIN_BUNDLE": RUIN_BUNDLE_KEY,
+        "PROVINCE_BUNDLE": PROVINCE_BUNDLE_KEY,
+        "EFFECT_SCOPE": EFFECT_SCOPE,
+        "EFFECT_KEYS": {v: effect_key(v) for v in EFFECT_VALUES if v != "none"},
+    })
+
+
+UNTAINTED_KEY = "uied_component_texts_localised_string_region_corruption_untainted_Tooltip_40058"
+
+
+def render_mct_settings(template):
+    """Fill every placeholder of the MCT settings template."""
+    return fill_placeholders(template, {
+        "DEFAULTS": SETTINGS_DEFAULTS,
+        "SLIDERS": SLIDERS,
+        "CULTURES": list(CULTURE_DEFAULTS),
+        "CULTURE_DEFAULTS": CULTURE_DEFAULTS,
+        "EFFECT_VALUES": list(EFFECT_VALUES),
+        "TYPE_NAME_KEYS": {t: "pooled_resources_display_name_wh3_main_corruption_" + t for t in CORRUPTION_TYPES},
+        "UNTAINTED_KEY": UNTAINTED_KEY,
+        "TEXTS": MCT_TEXTS,
+        "RU_PROBE": list(RU_PROBE),
+    })

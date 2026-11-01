@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.generate import make_option_clones
+from tools.generate import clone_sources, make_option_clones
 
 pytestmark = pytest.mark.game
 
@@ -29,17 +29,26 @@ def test_khorne_gets_single_clone(clones):
     assert kho[0][t.col("captive_option_outcome")] == "none"  # the "Skulls" row, id 2135151227
 
 
-def test_clone_strips_rewards(clones):
-    t = clones.options
+def test_clone_sources_match_clones(clones, vanilla_options):
+    sources = clone_sources(vanilla_options)
+    assert list(sources) == clones.ids
+    v = vanilla_options
+    by_id = {r[v.col("id")]: r for r in v.rows}
+    for r in clones.options.rows:
+        assert r[clones.options.col("group")] == by_id[sources[r[clones.options.col("id")]]][v.col("group")]
+    assert 1598549406 in sources.values()  # Wood Elves' Clear Heathland, fed by vanilla's Worldroots script
+
+
+def test_clone_keeps_rewards_and_costs(clones, vanilla_options):
+    t, v = clones.options, vanilla_options
+    sources = clone_sources(v)
+    by_id = {r[v.col("id")]: r for r in v.rows}
     for r in t.rows:
-        for c in ("resource_transaction", "required_resources", "target_settlement_faction_effect_bundle",
-                  "acting_army_faction_effect_bundle", "acting_army_effect_bundle",
-                  "capturing_force_resource_transaction", "captured_region_resource_transaction",
-                  "override_settlement_type"):
-            assert r[t.col(c)] is None, c
-        for c in ("target_settlement_faction_effect_bundle_turns", "acting_army_faction_effect_bundle_turns",
-                  "acting_army_effect_bundle_turns"):
-            assert r[t.col(c)] == 0, c
+        src = by_id[sources[r[t.col("id")]]]
+        for name, _ in t.fields:
+            if name not in ("id", "tooltip", "override_settlement_type"):
+                assert r[t.col(name)] == src[v.col(name)], name
+        assert r[t.col("override_settlement_type")] is None
         assert r[t.col("settlement_option")] == "occupation_decision_raze_without_occupy"
         assert r[t.col("tooltip")].startswith("{{tr:effect_bundles_localised_title_wh_dlc03_bundle_horde_raze}}")
 
