@@ -21,7 +21,7 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 176 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 211 automated tests (pack/db encoding, generated options, the campaign script) |
 
 *Русская версия ниже.*
 
@@ -82,7 +82,7 @@ python -m pytest
 python -m tools.build
 ```
 
-`python -m tools.build` writes `dist/permanent_raze.pack` and its Workshop preview image `dist/permanent_raze.png` (drawn by `tools/preview.py`). `--install` also copies both into the game's `data` folder (close the game first). Game path: `tools/paths.py`.
+`python -m tools.build` writes `dist/permanent_raze.pack` and its Workshop preview image `dist/permanent_raze.png` (drawn by `tools/preview.py`). `--install` also copies both into the game's `data` folder (close the game first). `--log` makes a debug build that also writes its log to `permraze_log.txt` in the game folder. Game path: `tools/paths.py`.
 
 ### How it works
 
