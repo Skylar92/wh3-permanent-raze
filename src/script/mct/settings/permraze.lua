@@ -37,6 +37,20 @@ end
 local rebuild = add_option("allow_rebuild", "checkbox")
 rebuild:set_default_value(DEFAULTS.allow_rebuild)
 
+local ai_erase = add_option("ai_erase", "checkbox")
+ai_erase:set_default_value(DEFAULTS.ai_erase)
+
+local function add_slider(key)
+    local opt = add_option(key, "slider")
+    local range = SLIDERS[key]
+    opt:slider_set_min_max(range[1], range[2])
+    opt:slider_set_step_size(range[3])
+    opt:slider_set_precision(0)
+    opt:set_default_value(DEFAULTS[key])
+end
+
+add_slider("ai_erase_chance")
+
 local mode = add_option("mode", "dropdown")
 mode:add_dropdown_values({
     {key = "off", text = T("mode_off")},
@@ -46,12 +60,7 @@ mode:add_dropdown_values({
 mode:set_default_value(DEFAULTS.mode)
 
 for _, key in ipairs({"ruin_strength", "province_strength", "multiplier", "threshold"}) do
-    local opt = add_option(key, "slider")
-    local range = SLIDERS[key]
-    opt:slider_set_min_max(range[1], range[2])
-    opt:slider_set_step_size(range[3])
-    opt:slider_set_precision(0)
-    opt:set_default_value(DEFAULTS[key])
+    add_slider(key)
 end
 
 local follow = add_option("daemon_follow_god", "checkbox")

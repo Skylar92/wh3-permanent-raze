@@ -81,7 +81,7 @@ def test_registers_permraze(mod):
 
 
 def test_general_options_match_defaults(mod):
-    types = {"mode": "dropdown", "daemon_follow_god": "checkbox", "allow_rebuild": "checkbox"}
+    types = {"mode": "dropdown", "daemon_follow_god": "checkbox", "allow_rebuild": "checkbox", "ai_erase": "checkbox"}
     for key, default in SETTINGS_DEFAULTS.items():
         o = opt(mod, key)
         assert o.type == types.get(key, "slider"), key
@@ -138,3 +138,10 @@ def test_campaign_defaults_equal_mct_defaults(mod):
 def test_does_nothing_without_mct():
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(render_mct_settings(TEMPLATE))
+
+
+def test_ai_erase_options_follow_rebuild(mod):
+    order = list(mod.order.values())
+    assert order[:4] == ["allow_rebuild", "ai_erase", "ai_erase_chance", "mode"]
+    assert opt(mod, "ai_erase").set_tooltip_text[1] == MCT_TEXTS["ai_erase_tip"][0]
+    assert "chaos" in MCT_TEXTS["ai_erase_tip"][0].lower() and "хаос" in MCT_TEXTS["ai_erase_tip"][1].lower()

@@ -24,5 +24,5 @@ def test_roundtrip_identical(name, schema, vanilla_db):
 def test_occupation_options_shape(schema, vanilla_db):
     t = decode_table(schema, "culture_settlement_occupation_options_tables",
                      vanilla_db["db/culture_settlement_occupation_options_tables/data__"])
-    assert t.version == 7 and len(t.rows) == 444
+    assert t.version == 7 and len(t.rows) == 450
     assert t.fields[t.col("id")][1] == "I64"

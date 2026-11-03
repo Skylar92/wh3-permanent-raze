@@ -72,6 +72,7 @@ local FACTIONS = {
 	wh3_main_dae_daemons = { culture = "wh3_main_dae_daemons" },
 	wh2_dlc09_tmb_exiles_of_nehek = { culture = "wh2_dlc09_tmb_tomb_kings" },
 	wh_main_dwf_dwarfs = { culture = "wh_main_dwf_dwarfs" },
+	nagash_legions = { culture = "wh3_dlc29_nag_undead_legions" },
 }
 
 local function null_interface() return { is_null_interface = function() return true end } end
@@ -119,6 +120,8 @@ function cm:get_saved_value(k) return SAVED_VALUES[k] end
 function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
 function cm:get_human_factions() return HUMANS end
+ROLL = 1  -- what cm:random_number returns; ROLL_MAX records the last max asked for
+function cm:random_number(max) ROLL_MAX = max; return ROLL end
 function cm:cai_disable_targeting_against_settlement(s) rec("cai_disable_targeting_against_settlement", s) end
 function cm:cai_enable_targeting_against_settlement(s) rec("cai_enable_targeting_against_settlement", s) end
 function cm:apply_effect_bundle_to_region(b, r, t)

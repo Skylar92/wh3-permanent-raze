@@ -487,7 +487,7 @@ def test_load_logs_every_erased_ruin(g):
     g.OUT = g.lua.table()
     first_tick(g)
     assert logged(g)[-3:] == [
-        "loaded, 2 erased ruins, 2 razed regions watched, 0 scorched provinces; settings allow_rebuild=false "
+        "loaded, 2 erased ruins, 2 razed regions watched, 0 scorched provinces; settings ai_erase=false ai_erase_chance=25 allow_rebuild=false "
         "daemon_follow_god=false mode=off multiplier=100 province_strength=30 ruin_strength=5 threshold=50",
         "  r1 abandoned, blocked, marked",
         "  r2 owned by wh2_dlc09_tmb_exiles_of_nehek, NOT blocked, marked",
@@ -597,7 +597,8 @@ def test_listener_condition_error_logged(g):
     setup(g)
     g.OUT = g.lua.table()
     g.fire("CharacterRazedSettlement", g.lua.table())
-    assert len(logged(g)) == 1 and logged(g)[0].startswith("permraze_settlement_razed condition failed:")
+    assert [m.split(":")[0] for m in logged(g)] == ["permraze_settlement_razed condition failed",
+                                                    "permraze_ai_razed condition failed"]
 
 
 def test_province_left_alone_logs_why(g):

@@ -29,6 +29,11 @@
 --	scripts (Khorne's spread to ruins and others) hand ruins over without an
 --	army, past the block, and such ruins are abandoned and sealed again.
 --
+--	AI erasing (MCT option, off by default): the AI cannot pick our option
+--	on purpose, so each AI raze erases the ruins by the chance set in MCT,
+--	the same way a player's erase does. Corruption of these ruins is rebuilt
+--	once at round start or on a human turn, not after every AI raze.
+--
 ------------------------------------------------------------------------------
 
 -- Filled in by tools/build.py: our occupation option ids, for each culture
@@ -204,6 +209,48 @@ function permraze:on_razed(region_key, faction_key)
 		self:erase_region(region_key, pending_faction)
 	elseif not vanilla_decided[region_key] then
 		self.persistent.razed[region_key] = faction_key
+	end
+end
+
+-- Set when the AI erased ruins since the last corruption refresh.
+local corruption_stale = false
+
+-- Chance in percent that an AI raze erases the ruins; 0 when the option is off or without MCT.
+function permraze:ai_erase_chance()
+	local ok, settings = pcall(function()
+		return permraze_corruption:settings()
+	end)
+	if not ok or type(settings) ~= "table" or settings.ai_erase ~= true or type(settings.ai_erase_chance) ~= "number" then
+		return 0
+	end
+	return settings.ai_erase_chance
+end
+
+-- Cultures with no "raze forever" button: Nagash's Undead Legions devastate everything anyway (tools/generate.py).
+local AI_SKIPPED_CULTURES = { wh3_dlc29_nag_undead_legions = true }
+
+function permraze:on_ai_razed(region_key, faction_key)
+	local chance = self:ai_erase_chance()
+	if chance <= 0 or self.persistent.erased[region_key] then
+		return
+	end
+	local faction = cm:get_faction(faction_key)
+	if faction and not faction:is_null_interface() and AI_SKIPPED_CULTURES[faction:culture()] then
+		return
+	end
+	local roll = cm:random_number(100)
+	if roll > chance then
+		log("AI raze of " .. region_key .. " by " .. faction_key .. " kept: rolled " .. roll .. ", chance " .. chance)
+		return
+	end
+	log("AI raze of " .. region_key .. " by " .. faction_key .. " erased: rolled " .. roll .. ", chance " .. chance)
+	self:erase_and_devastate(region_key, faction_key)
+	corruption_stale = true
+end
+
+function permraze:refresh_stale_corruption()
+	if corruption_stale then
+		self:refresh_corruption()
 	end
 end
 
@@ -542,6 +589,7 @@ function permraze:mark_erased()
 end
 
 function permraze:refresh_corruption()
+	corruption_stale = false
 	local ok, err = pcall(function()
 		if type(permraze_corruption) == "table" then
 			permraze_corruption:refresh(self.persistent)
@@ -639,12 +687,25 @@ function permraze:init()
 		end
 	)
 
+	listen("permraze_ai_razed", "CharacterRazedSettlement",
+		function(context)
+			return not context:character():faction():is_human()
+		end,
+		function(context)
+			self:on_ai_razed(
+				context:garrison_residence():region():name(),
+				context:character():faction():name()
+			)
+		end
+	)
+
 	listen("permraze_round_start", "WorldStartRound",
 		true,
 		function()
 			self:clear_turn_state()
 			self:restore_blocks()
 			self:reseal_taken()
+			self:refresh_stale_corruption()
 			local ok, err = pcall(function()
 				self:audit_watched()
 			end)
@@ -658,6 +719,7 @@ function permraze:init()
 		true,
 		function(context)
 			if context:faction():is_human() then
+				self:refresh_stale_corruption()
 				self:sync_blocks()
 			else
 				self:restore_blocks()

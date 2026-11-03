@@ -21,7 +21,7 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 211 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 234 automated tests (pack/db encoding, generated options, the campaign script) |
 
 ## Features
 
@@ -33,7 +33,7 @@
   - Nagash's dead land: Vampire Counts, Vampire Coast;
   - everyone else (Empire, Bretonnia, Dwarfs, Kislev, Cathay, elves, Lizardmen, Greenskins, Ogres, Tomb Kings…) leaves the land as it is.
 - By default no corruption, no climate change, no faction bonuses. With the optional [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) erased ruins can spread the destroyer's corruption or cleanse it (see below). The option costs, loots and rewards exactly like that culture's normal raze: skulls, chivalry, souls, Waaagh, forest health and the rest come along.
-- Human players only: the AI never gets a permanent block from it.
+- Human players only by default: the AI never picks the option. An optional MCT setting lets AI razes erase ruins too (see below).
 - Works with Archaon's Destroyer path: his own script still devastates the province and counts it toward his bonuses and long victory.
 - Works in every game language: the option reads **"Raze: Scorched Earth"**, using the game's own translations.
 
@@ -47,6 +47,16 @@ Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sha
 - A rebuilt settlement loses the devastated look and its corruption. The scorched land goes once no more than half of the province is in ruins. It can be erased again.
 - The big burning icon on the settlement label is drawn by the game only while you cannot occupy the ruins, so it goes out where an army can rebuild; the small Scorched Earth icon next to the name stays.
 
+## Optional: the AI erases ruins too (MCT)
+
+Off by default. Tick **The AI erases ruins forever too** on the **permraze** page and every settlement the AI razes may be erased forever, by the **AI erase chance** (25% by default, 1–100%).
+
+- The AI cannot choose Raze Forever on purpose, so the chance is rolled on each of its razes. Erased ruins are blocked, marked and scorched exactly as yours are, and count toward corruption by the culture of the faction that erased them.
+- Your own Raze Forever works as before; the chance never applies to human players.
+- With rebuilding on, you can rebuild ruins the AI erased too, so a settlement a mission needs is not lost for good.
+- Nagash's Undead Legions are left out, as they have no Raze Forever button.
+- Fair warning: with a high chance, Chaos, Beastmen and friends can turn half the map into ruins nobody can settle. The result may be insane.
+
 ## Optional: corruption settings (MCT)
 
 Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) nothing changes: no corruption, exactly as before. With it, the **permraze** settings page lets erased ruins spread the destroyer's corruption or cleanse it.
@@ -56,7 +66,7 @@ Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/file
 - **Province threshold:** more than 50% of the province's settlements by default; only ruins erased with Raze Forever count.
 - **By culture:** each culture has a dropdown: nothing / cleanse (Untainted) / spread a corruption type. Defaults: Chaos factions, Daemons, Norsca, Beastmen and Chaos Dwarfs spread Chaos Undivided; Khorne, Nurgle, Slaanesh and Tzeentch spread their own god's corruption; Skaven spread Skaven corruption; Vampire Counts and Vampire Coast spread Vampiric corruption; Empire, Bretonnia, Dwarfs, Kislev, Cathay, High Elves, Wood Elves and Lizardmen cleanse; Dark Elves, Greenskins, Ogres and Tomb Kings do nothing.
 - **Fixed exceptions:** Morathi spreads Slaanesh, the Glottkin (Host of the Triplets) spread Nurgle. An option (off by default) makes a Daemon Prince follow the god they ascended to.
-- Settings are per campaign and can be changed mid-campaign; all ruins are recalculated when you do. Human players only. Province mode does not stack on provinces the game itself has already devastated (Archaon, endgames).
+- Settings are per campaign and can be changed mid-campaign; all ruins are recalculated when you do. Only ruins erased by human players count, plus the AI's when the AI erases ruins too. Province mode does not stack on provinces the game itself has already devastated (Archaon, endgames).
 
 ## Install
 
@@ -87,7 +97,7 @@ python -m tools.build
 - `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, rewards and costs kept), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
 - `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
-- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
+- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. With AI erasing on, it rolls the MCT chance on every AI raze and rebuilds the corruption of those ruins once per round. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 
 ### Texts
 

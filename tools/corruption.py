@@ -41,6 +41,8 @@ DAEMON_PRINCE_FACTION = "wh3_main_dae_daemon_prince"
 
 SETTINGS_DEFAULTS = {
     "allow_rebuild": False,
+    "ai_erase": False,
+    "ai_erase_chance": 25,
     "mode": "off",
     "ruin_strength": 5,
     "province_strength": 30,
@@ -51,6 +53,7 @@ SETTINGS_DEFAULTS = {
 
 # key: (min, max, step)
 SLIDERS = {
+    "ai_erase_chance": (1, 100, 1),
     "ruin_strength": (0, 30, 1),
     "province_strength": (0, 100, 1),
     "multiplier": (0, 300, 10),
@@ -64,10 +67,10 @@ EFFECT_SCOPE = "region_to_province_own_unseen"
 # text key: (English, Russian)
 MCT_TEXTS = {
     "mod_title": ("Raze Forever", "Стереть навсегда"),
-    "mod_description": ("Optionally lets players rebuild erased ruins and lets erased ruins spread or cleanse "
-                        "corruption. Settings apply per campaign.",
-                        "По желанию: игрок может восстанавливать стёртые руины, а руины могут распространять или "
-                        "снимать скверну. Настройки действуют для кампании."),
+    "mod_description": ("Optionally lets players rebuild erased ruins, lets the AI erase ruins too and lets erased "
+                        "ruins spread or cleanse corruption. Settings apply per campaign.",
+                        "По желанию: игрок может восстанавливать стёртые руины, ИИ тоже может их стирать, а руины "
+                        "могут распространять или снимать скверну. Настройки действуют для кампании."),
     "section_general": ("General", "Общие"),
     "section_cultures": ("Effect of erased ruins by culture", "Эффект руин по культурам"),
     "allow_rebuild_label": ("Players can rebuild erased ruins", "Игрок может восстанавливать стёртые руины"),
@@ -75,6 +78,16 @@ MCT_TEXTS = {
                           "The AI never can.",
                           "В ваш ход армия в регионе руин или рядом может колонизировать их как обычно. "
                           "ИИ не может никогда."),
+    "ai_erase_label": ("The AI erases ruins forever too", "ИИ тоже стирает руины навсегда"),
+    "ai_erase_tip": ("Every settlement the AI razes may be erased forever, by the chance below. "
+                     "Warning: the result may be insane, pure chaos. Chaos and Beastmen will love it; "
+                     "your campaign might not.",
+                     "Каждое поселение, разорённое ИИ, может быть стёрто навсегда с шансом ниже. "
+                     "Внимание: результат может быть безумным, чистый хаос. Хаосу и зверолюдам понравится, "
+                     "вашей кампании — не факт."),
+    "ai_erase_chance_label": ("AI erase chance, %", "Шанс стирания ИИ, %"),
+    "ai_erase_chance_tip": ("Chance that an AI raze erases the ruins forever.",
+                            "Шанс, что разорение ИИ сотрёт руины навсегда."),
     "mode_label": ("Corruption mode", "Режим скверны"),
     "mode_tip": ("When erased ruins spread corruption: never, per erased settlement, or once per province.",
                  "Когда стёртые руины распространяют скверну: никогда, за каждое поселение или за провинцию."),
