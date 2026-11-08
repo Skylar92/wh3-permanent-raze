@@ -39,7 +39,7 @@
 
 ## Optional: rebuilding erased ruins (MCT)
 
-Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021), tick **Players can rebuild erased ruins** on the **permraze** page to undo a mistake or bring back a settlement you need later.
+Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021), tick **Players can rebuild erased ruins** on the **General** page of **Raze Forever** to undo a mistake or bring back a settlement you need later.
 
 - Move an army into the ruins' region or a region next to it. On your turn the block is lifted from those ruins only, and the vanilla **Colonise** works at the usual cost: you get a tier 1 settlement.
 - The block comes back as soon as the army leaves, and always before the AI moves. The AI can never rebuild erased ruins.
@@ -49,7 +49,10 @@ Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sha
 
 ## Optional: the AI erases ruins too (MCT)
 
-Off by default. Tick **The AI erases ruins forever too** on the **permraze** page and every settlement the AI razes may be erased forever, by the **AI erase chance** (25% by default, 1–100%).
+Off by default. Tick **The AI erases ruins forever too** on the **AI erasing** page and every settlement the AI razes may be erased forever. The chances below it stay locked until the box is ticked:
+
+- **General AI chance:** 25% by default (1–100%), used by every culture left at **General**.
+- **By culture:** one dropdown per culture: **General** (default) or 0–100% in steps of 5. General uses the general chance, 0% means that culture never erases, any other value is its own chance. For example, set Chaos to 40%, Beastmen to 60% and everyone else to 0 for a lore-friendly map where only the destroyers burn the land for good.
 
 - The AI cannot choose Raze Forever on purpose, so the chance is rolled on each of its razes. Erased ruins are blocked, marked and scorched exactly as yours are, and count toward corruption by the culture of the faction that erased them.
 - Your own Raze Forever works as before; the chance never applies to human players.
@@ -59,9 +62,9 @@ Off by default. Tick **The AI erases ruins forever too** on the **permraze** pag
 
 ## Optional: corruption settings (MCT)
 
-Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) nothing changes: no corruption, exactly as before. With it, the **permraze** settings page lets erased ruins spread the destroyer's corruption or cleanse it.
+Without the [Mod Configuration Tool](https://steamcommunity.com/sharedfiles/filedetails/?id=2927955021) nothing changes: no corruption, exactly as before. With it, the **Corruption** page lets erased ruins spread the destroyer's corruption or cleanse it.
 
-- **Mode:** Off (default) / per settlement / per province.
+- **Mode:** Off (default) / per settlement / per province. Settings the chosen mode does not use are locked: everything while Off, the province strength and threshold per settlement, the ruin strength per province.
 - **Strength:** ruin 5 (default), province 30 (the same as Archaon's devastated province), multiplier 100% (0–300%).
 - **Province threshold:** more than 50% of the province's settlements by default; only ruins erased with Raze Forever count.
 - **By culture:** each culture has a dropdown: nothing / cleanse (Untainted) / spread a corruption type. Defaults: Chaos factions, Daemons, Norsca, Beastmen and Chaos Dwarfs spread Chaos Undivided; Khorne, Nurgle, Slaanesh and Tzeentch spread their own god's corruption; Skaven spread Skaven corruption; Vampire Counts and Vampire Coast spread Vampiric corruption; Empire, Bretonnia, Dwarfs, Kislev, Cathay, High Elves, Wood Elves and Lizardmen cleanse; Dark Elves, Greenskins, Ogres and Tomb Kings do nothing.
@@ -96,8 +99,8 @@ python -m tools.build
 
 - `tools/generate.py` clones each culture's vanilla "raze without occupy" option (one per option group, rewards and costs kept), Archaon's permanent block effect and bundle, and builds the loc entries from `tools/texts.py`.
 - `tools/build.py` writes the db tables, loc and the campaign script into PFH5 packs (`tools/packfile.py`, `tools/dbtable.py`, `tools/loc.py`, RPFM schema in `schemas/`).
-- `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file; `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
-- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. With AI erasing on, it rolls the MCT chance on every AI raze and rebuilds the corruption of those ruins once per round. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
+- `tools/corruption.py` holds the corruption data (culture defaults, effect keys, MCT texts); `src/script/mct/settings/permraze.lua` is the optional MCT settings file (three pages, with options locked while the AI switch or the corruption mode makes them pointless); `src/script/campaign/mod/permraze_corruption.lua` reads those settings and applies the corruption of erased ruins.
+- `src/script/campaign/mod/permraze.lua` listens for the occupation decision and the raze, then blocks the region, sets the devastated look and, past the province threshold, activates the devastation area. With rebuilding on, it lifts the block next to human armies during human turns and undoes the erasure when the ruins are colonised. With AI erasing on, it rolls the MCT chance (the razing culture's own, else the general one) on every AI raze and rebuilds the corruption of those ruins once per round. Tested through `lupa` against a mock of the campaign API (`tests/lua/mock_game.lua`).
 
 ### Texts
 

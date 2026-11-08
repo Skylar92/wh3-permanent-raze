@@ -199,3 +199,66 @@ def test_unknown_faction_still_rolls(g):
     setup(g)
     ai_raze(g, "r1", faction="no_such_faction")
     assert calls(g)[:len(ERASE_R1)] == ERASE_R1
+
+
+# Per-culture chance (ai_chance_<culture>: "general" or a percent as a string)
+
+BEASTMEN_CHANCE = "ai_chance_wh_dlc03_bst_beastmen"
+
+
+def test_culture_chance_overrides_general(g):
+    setup(g, values=dict(ON, **{BEASTMEN_CHANCE: "80"}), roll=80)
+    ai_raze(g, "r1")
+    assert calls(g) == ERASE_R1
+
+
+def test_culture_chance_can_be_lower_than_general(g):
+    setup(g, values=dict(ON, **{BEASTMEN_CHANCE: "10"}), roll=11)
+    ai_raze(g, "r1")
+    assert calls(g) == []
+    assert g.ROLL_MAX == 100
+
+
+def test_culture_chance_zero_never_rolls(g):
+    setup(g, values={"ai_erase": True, "ai_erase_chance": 100, BEASTMEN_CHANCE: "0"})
+    ai_raze(g, "r1")
+    assert calls(g) == []
+    assert g.ROLL_MAX is None
+
+
+def test_culture_chance_general_uses_general(g):
+    setup(g, values=dict(ON, **{BEASTMEN_CHANCE: "general"}), roll=26)
+    g.OUT = g.lua.table()
+    ai_raze(g, "r1")
+    assert calls(g) == []
+    assert "AI raze of r1 by wh_dlc03_bst_beastmen kept: rolled 26, chance 25" in logged(g)
+
+
+def test_other_cultures_keep_general_chance(g):
+    setup(g, values={"ai_erase": True, "ai_erase_chance": 100, BEASTMEN_CHANCE: "0"}, roll=100)
+    ai_raze(g, "r1", faction=TOMB_KINGS)
+    assert calls(g)[:len(ERASE_R1)] == ERASE_R1
+
+
+def test_culture_chance_ignored_when_ai_erase_off(g):
+    setup(g, values={"ai_erase": False, BEASTMEN_CHANCE: "100"})
+    ai_raze(g, "r1")
+    assert calls(g) == []
+    assert g.ROLL_MAX is None
+
+
+def test_culture_chance_with_general_zero(g):
+    """With a general chance of 0 only the cultures given their own chance erase."""
+    setup(g, values={"ai_erase": True, "ai_erase_chance": 0, BEASTMEN_CHANCE: "50"}, roll=50)
+    ai_raze(g, "r1")
+    assert calls(g) == ERASE_R1
+    g.CALLS = g.lua.table()
+    ai_raze(g, "r2", faction=TOMB_KINGS)
+    assert calls(g) == []
+
+
+def test_culture_chance_shown_in_settings_log_only_when_set(g):
+    setup(g, values=dict(ON, **{BEASTMEN_CHANCE: "40"}))
+    text = g.permraze.settings_text(g.permraze)
+    assert BEASTMEN_CHANCE + "=40" in text
+    assert "ai_chance_wh_main_emp_empire" not in text

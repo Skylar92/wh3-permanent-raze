@@ -51,6 +51,12 @@ SETTINGS_DEFAULTS = {
     "daemon_follow_god": False,
 }
 
+# Per-culture AI erase chance: one dropdown per culture, in the order of CULTURE_DEFAULTS.
+# "general" (the default) uses the general AI erase chance; "0" means the culture never erases.
+AI_CHANCE_PREFIX = "ai_chance_"
+AI_CHANCE_DEFAULT = "general"
+AI_CHANCE_VALUES = (AI_CHANCE_DEFAULT,) + tuple(str(p) for p in range(0, 101, 5))
+
 # key: (min, max, step)
 SLIDERS = {
     "ai_erase_chance": (1, 100, 1),
@@ -71,23 +77,39 @@ MCT_TEXTS = {
                         "ruins spread or cleanse corruption. Settings apply per campaign.",
                         "По желанию: игрок может восстанавливать стёртые руины, ИИ тоже может их стирать, а руины "
                         "могут распространять или снимать скверну. Настройки действуют для кампании."),
+    "page_general": ("General", "Общие"),
+    "page_ai": ("AI erasing", "Стирание ИИ"),
+    "page_corruption": ("Corruption", "Скверна"),
     "section_general": ("General", "Общие"),
+    "section_ai": ("AI erasing", "Стирание ИИ"),
+    "section_ai_cultures": ("AI erase chance by culture", "Шанс стирания ИИ по культурам"),
+    "section_corruption": ("Corruption of erased ruins", "Скверна стёртых руин"),
     "section_cultures": ("Effect of erased ruins by culture", "Эффект руин по культурам"),
+    "ai_culture_tip": ("Chance that this culture's AI erases the ruins it razes. General: use the general AI chance. "
+                       "0%: this culture never erases.",
+                       "Шанс, что ИИ этой культуры сотрёт разорённые руины. «Общий»: общий шанс ИИ. "
+                       "0%: эта культура никогда не стирает."),
+    "ai_culture_general": ("General", "Общий"),
+    "lock_ai_off": ("Tick \"The AI erases ruins forever too\" above first.",
+                    "Сначала включите «ИИ тоже стирает руины навсегда» выше."),
+    "lock_mode_off": ("Corruption mode is Off.", "Режим скверны выключен."),
+    "lock_mode_per_settlement": ("Not used in Per settlement mode.", "Не используется в режиме «За поселение»."),
+    "lock_mode_per_province": ("Not used in Per province mode.", "Не используется в режиме «За провинцию»."),
     "allow_rebuild_label": ("Players can rebuild erased ruins", "Игрок может восстанавливать стёртые руины"),
     "allow_rebuild_tip": ("On your turn an army in or next to the ruins' region can colonise them as usual. "
                           "The AI never can.",
                           "В ваш ход армия в регионе руин или рядом может колонизировать их как обычно. "
                           "ИИ не может никогда."),
     "ai_erase_label": ("The AI erases ruins forever too", "ИИ тоже стирает руины навсегда"),
-    "ai_erase_tip": ("Every settlement the AI razes may be erased forever, by the chance below. "
+    "ai_erase_tip": ("Every settlement the AI razes may be erased forever, by the chances below. "
                      "Warning: the result may be insane, pure chaos. Chaos and Beastmen will love it; "
                      "your campaign might not.",
-                     "Каждое поселение, разорённое ИИ, может быть стёрто навсегда с шансом ниже. "
+                     "Каждое поселение, разорённое ИИ, может быть стёрто навсегда с шансами ниже. "
                      "Внимание: результат может быть безумным, чистый хаос. Хаосу и зверолюдам понравится, "
                      "вашей кампании — не факт."),
     "ai_erase_chance_label": ("AI erase chance, %", "Шанс стирания ИИ, %"),
-    "ai_erase_chance_tip": ("Chance that an AI raze erases the ruins forever.",
-                            "Шанс, что разорение ИИ сотрёт руины навсегда."),
+    "ai_erase_chance_tip": ("Chance that an AI raze erases the ruins forever, for every culture left at General below.",
+                            "Шанс, что разорение ИИ сотрёт руины навсегда, для всех культур с «Общий» ниже."),
     "mode_label": ("Corruption mode", "Режим скверны"),
     "mode_tip": ("When erased ruins spread corruption: never, per erased settlement, or once per province.",
                  "Когда стёртые руины распространяют скверну: никогда, за каждое поселение или за провинцию."),
@@ -126,4 +148,6 @@ def campaign_defaults() -> dict:
     defaults = dict(SETTINGS_DEFAULTS)
     for culture, value in CULTURE_DEFAULTS.items():
         defaults["culture_" + culture] = value
+    for culture in CULTURE_DEFAULTS:
+        defaults[AI_CHANCE_PREFIX + culture] = AI_CHANCE_DEFAULT
     return defaults

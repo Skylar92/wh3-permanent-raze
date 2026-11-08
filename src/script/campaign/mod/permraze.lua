@@ -215,12 +215,20 @@ end
 -- Set when the AI erased ruins since the last corruption refresh.
 local corruption_stale = false
 
--- Chance in percent that an AI raze erases the ruins; 0 when the option is off or without MCT.
-function permraze:ai_erase_chance()
+-- Chance in percent that an AI raze by this culture erases the ruins; 0 when the option is off or without MCT.
+-- A culture's own chance (ai_chance_<culture>: "general" or a percent as a string) overrides the general one.
+function permraze:ai_erase_chance(culture)
 	local ok, settings = pcall(function()
 		return permraze_corruption:settings()
 	end)
-	if not ok or type(settings) ~= "table" or settings.ai_erase ~= true or type(settings.ai_erase_chance) ~= "number" then
+	if not ok or type(settings) ~= "table" or settings.ai_erase ~= true then
+		return 0
+	end
+	local own = culture and tonumber(settings["ai_chance_" .. culture])
+	if own and own >= 0 then
+		return own
+	end
+	if type(settings.ai_erase_chance) ~= "number" then
 		return 0
 	end
 	return settings.ai_erase_chance
@@ -230,12 +238,19 @@ end
 local AI_SKIPPED_CULTURES = { wh3_dlc29_nag_undead_legions = true }
 
 function permraze:on_ai_razed(region_key, faction_key)
-	local chance = self:ai_erase_chance()
-	if chance <= 0 or self.persistent.erased[region_key] then
+	if self.persistent.erased[region_key] then
 		return
 	end
+	local culture
 	local faction = cm:get_faction(faction_key)
-	if faction and not faction:is_null_interface() and AI_SKIPPED_CULTURES[faction:culture()] then
+	if faction and not faction:is_null_interface() then
+		culture = faction:culture()
+	end
+	if culture and AI_SKIPPED_CULTURES[culture] then
+		return
+	end
+	local chance = self:ai_erase_chance(culture)
+	if chance <= 0 then
 		return
 	end
 	local roll = cm:random_number(100)
@@ -790,7 +805,7 @@ function permraze:settings_text()
 	end
 	local parts = {}
 	for _, key in ipairs(sorted_keys(settings)) do
-		if not key:find("^culture_") then
+		if not key:find("^culture_") and not (key:find("^ai_chance_") and settings[key] == "general") then
 			parts[#parts + 1] = key .. "=" .. tostring(settings[key])
 		end
 	end

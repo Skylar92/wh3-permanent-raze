@@ -1,6 +1,6 @@
 """Embed generated data into the Lua campaign script template."""
 
-from tools.corruption import (CORRUPTION_TYPES, CULTURE_DEFAULTS, DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE,
+from tools.corruption import (AI_CHANCE_DEFAULT, AI_CHANCE_PREFIX, AI_CHANCE_VALUES, CORRUPTION_TYPES, CULTURE_DEFAULTS, DAEMON_PRINCE_FACTION, DAEMONS_CULTURE, EFFECT_SCOPE,
                               EFFECT_VALUES, FACTION_OVERRIDES, MCT_TEXTS, RU_PROBE, SETTINGS_DEFAULTS, SLIDERS,
                               campaign_defaults, effect_key)
 from tools.generate import PROVINCE_BUNDLE_KEY, RUIN_BUNDLE_KEY
@@ -85,4 +85,5 @@ def render_mct_settings(template):
         "UNTAINTED_KEY": UNTAINTED_KEY,
         "TEXTS": MCT_TEXTS,
         "RU_PROBE": list(RU_PROBE),
+        "AI_CHANCE": {"prefix": AI_CHANCE_PREFIX, "default": AI_CHANCE_DEFAULT, "values": list(AI_CHANCE_VALUES)},
     })
