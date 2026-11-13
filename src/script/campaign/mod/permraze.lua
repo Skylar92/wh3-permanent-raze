@@ -34,6 +34,15 @@
 --	the same way a player's erase does. Corruption of these ruins is rebuilt
 --	once at round start or on a human turn, not after every AI raze.
 --
+--	Chaos Invasion (End Times, MCT option, off by default): every raze by
+--	Archaon's invasion faction erases the ruins without a roll, and so do the
+--	regions its script razes when it begins (no raze event comes for them;
+--	they are caught as they fall to ruin, between the start of its main stage
+--	and the moment it spawns). Nothing about the invasion runs at the start
+--	of a turn: checks there crashed the game when an episode stage began.
+--	While it runs, provinces are painted by its own script for every erased
+--	ruin, not by us, so the icon and the 50% wasteland rule match vanilla.
+--
 ------------------------------------------------------------------------------
 
 -- Filled in by tools/build.py: our occupation option ids, for each culture
@@ -52,6 +61,8 @@ local SETTLEMENT_STATE = "devastated"
 local REBUILT_STATE = "none"
 local SAVE_KEY = "permraze"
 local ASCEND_PREFIX = "wh3_main_ritual_dae_ascend_"
+local INVASION_FACTION = "wh3_dlc29_chaos_invasion_confederation_owner"
+local INVASION_RUIN_BUNDLE = "wh3_dlc29_episodes_chaos_invasion_devastated_region"
 
 local function new_state()
 	return {
@@ -241,6 +252,12 @@ function permraze:on_ai_razed(region_key, faction_key)
 	if self.persistent.erased[region_key] then
 		return
 	end
+	if faction_key == INVASION_FACTION and self:invasion_erase_on() then
+		log("AI raze of " .. region_key .. " by the Chaos Invasion erased")
+		self:erase_and_devastate(region_key, faction_key)
+		corruption_stale = true
+		return
+	end
 	local culture
 	local faction = cm:get_faction(faction_key)
 	if faction and not faction:is_null_interface() then
@@ -279,6 +296,180 @@ function permraze:clear_turn_state()
 	self.persistent.pending = {}
 	self.persistent.razed = {}
 	vanilla_decided = {}
+end
+
+function permraze:invasion_erase_on()
+	local ok, settings = pcall(function()
+		return permraze_corruption:settings()
+	end)
+	return ok and type(settings) == "table" and settings.invasion_erase == true
+end
+
+-- Archaon's End Times invasion, read straight from the episode's saved data without calling into
+-- the vanilla episode scripts. Nothing here runs at the start of a turn: checks there crashed the
+-- game while it showed the episode's messages (the event feed), when a stage began.
+local INVASION_STAGES = {
+	episode_chaos_invasion_stage_main = true,
+	episode_chaos_invasion_stage_battle = true,
+}
+
+-- The key of the episode's current stage, or nil.
+function permraze:invasion_stage()
+	if type(episode_chaos_invasion) ~= "table" then
+		return nil
+	end
+	local ok, key = pcall(function()
+		local p = episode_chaos_invasion.persistent
+		if type(p) ~= "table" or type(p.current_stage_index) ~= "number" then
+			return nil
+		end
+		local stage = episode_chaos_invasion.stages[p.current_stage_index]
+		return type(stage) == "table" and stage.stage_key or nil
+	end)
+	return ok and key or nil
+end
+
+function permraze:invasion_spawned()
+	local ok, spawned = pcall(function()
+		return episode_chaos_invasion.persistent.invasion_spawned == true
+	end)
+	return ok and spawned == true
+end
+
+-- The invasion has spawned and is not over yet: its main or final-battle stage.
+function permraze:invasion_active()
+	return INVASION_STAGES[self:invasion_stage()] == true and self:invasion_spawned()
+end
+
+-- Its main stage has begun but the invasion has not spawned yet: the moment its script razes the
+-- regions it begins with (all of them in a few seconds, before invasion_spawned is set).
+function permraze:invasion_beginning()
+	return self:invasion_stage() == "episode_chaos_invasion_stage_main" and not self:invasion_spawned()
+end
+
+-- A region its script razes as the invasion begins: no raze event comes for it, only this one.
+-- The invasion script paints the province itself, so the ruins are only sealed.
+function permraze:on_region_abandoned(region_key, reason)
+	if reason ~= "abandoned" or self.persistent.erased[region_key] then
+		return
+	end
+	if not self:invasion_beginning() or not self:invasion_erase_on() then
+		return
+	end
+	self:seal(region_key)
+	self.persistent.erased[region_key] = {
+		faction = INVASION_FACTION,
+		order = self:next_erase_order(),
+		turn = cm:model():turn_number(),
+	}
+	corruption_stale = true
+	log("erased " .. region_key .. " as the Chaos Invasion began")
+end
+
+-- After the raze settles, the invasion script gives the ruin its icon and paints the province by its own rule.
+function permraze:hand_to_invasion(region_key)
+	cm:callback(function()
+		local ok, err = pcall(function()
+			local region = cm:get_region(region_key)
+			if not region:is_abandoned() then
+				log("Chaos Invasion update skipped: " .. region_key .. " no longer in ruins")
+				return
+			end
+			local had_icon = region:has_effect_bundle(INVASION_RUIN_BUNDLE)
+			episode_chaos_invasion:update_razed_region(region_key)
+			log("Chaos Invasion updated " .. region_key .. (had_icon and ", icon was there" or ", icon was missing")
+				.. (region:has_effect_bundle(INVASION_RUIN_BUNDLE) and ", icon now there" or ", icon still missing"))
+			log("  " .. self:province_line(region:province()))
+		end)
+		if not ok then
+			log("Chaos Invasion update of " .. region_key .. " failed: " .. tostring(err))
+		end
+	end, 0.1)
+end
+
+-- Debug build only: an MCT option outside the campaign defaults, read straight from MCT.
+function permraze:debug_option(key)
+	if not FILE_LOG or type(get_mct) ~= "function" then
+		return nil
+	end
+	local ok, value = pcall(function()
+		return get_mct():get_mod_by_key("permraze"):get_option_by_key(key):get_finalized_setting()
+	end)
+	if not ok then
+		return nil
+	end
+	return value
+end
+
+-- Debug build only: the MCT box "Start the Chaos Invasion now" starts the episode and skips its
+-- two 10-turn warnings, as the vanilla episodes cheats would.
+function permraze:debug_start_invasion()
+	if self:debug_option("debug_start_invasion") ~= true then
+		return
+	end
+	if type(episode_chaos_invasion) ~= "table" or type(episodes_manager) ~= "table" then
+		log("debug start: no Chaos Invasion scripts in this campaign")
+		return
+	end
+	local episode = episode_chaos_invasion
+	-- Filled by the vanilla script only when the invasion can happen in this campaign.
+	if type(episode.persistent.legendary_lords) ~= "table" then
+		log("debug start: the Chaos Invasion is not available here (End Times invasion off in the campaign "
+			.. "settings, or Archaon is played by a human)")
+		return
+	end
+	local main = episodes_manager:get_episode_stage_index_by_name(episode, "episode_chaos_invasion_stage_main")
+	local stage = episode.persistent.current_stage_index
+	if type(stage) == "number" and (stage < 1 or stage >= main) then
+		log("debug start: the Chaos Invasion already began or ended (stage " .. stage .. ")")
+		return
+	end
+	if type(stage) ~= "number" then
+		log("debug start: starting the Chaos Invasion episode")
+		episodes_manager:start_episode(episode)
+	end
+	for _ = 1, main do
+		stage = episode.persistent.current_stage_index
+		if type(stage) ~= "number" or stage >= main then
+			break
+		end
+		log("debug start: skipping stage " .. stage)
+		episodes_manager:advance_stage(episode, stage)
+	end
+	log("debug start: Chaos Invasion now at stage " .. tostring(episode.persistent.current_stage_index))
+end
+
+-- Debug build only: no fog of war for the players, to watch the whole map while testing.
+local map_reveal_logged = false
+
+function permraze:reveal_map()
+	if not FILE_LOG then
+		return
+	end
+	-- MCT box "Lift the fog of war", off unless ticked.
+	if self:debug_option("debug_reveal_map") ~= true then
+		if map_reveal_logged ~= "off" then
+			map_reveal_logged = "off"
+			log("debug build: fog of war kept, the MCT box is off")
+		end
+		return
+	end
+	if map_reveal_logged == "off" then
+		map_reveal_logged = false
+	end
+	local ok, err = pcall(function()
+		cm:show_shroud(false)
+		local regions = cm:model():world():region_manager():region_list()
+		for _, faction_key in ipairs(cm:get_human_factions()) do
+			for i = 0, regions:num_items() - 1 do
+				cm:make_region_visible_in_shroud(faction_key, regions:item_at(i):name())
+			end
+		end
+	end)
+	if not map_reveal_logged then
+		map_reveal_logged = true
+		log(ok and "debug build: fog of war lifted" or ("debug build: fog of war not lifted: " .. tostring(err)))
+	end
 end
 
 -- Settings live in the corruption script, which reads every MCT option. Off without MCT.
@@ -460,25 +651,117 @@ function permraze:audit_watched()
 end
 
 -- Who took a ruin a human razed, and how: the clue for ruins settled with no army in sight.
+-- A debug build also logs every region that falls to ruin and every change of an invasion ruin:
+-- the order of these and the raze events is what the wasteland depends on.
 function permraze:log_owner_change(context)
 	local region = context:region()
 	local region_key = region:name()
+	local has_reason, reason = pcall(function() return context:reason() end)
+	local has_icon = region:has_effect_bundle(INVASION_RUIN_BUNDLE)
 	if not self.persistent.watched[region_key] and not self.persistent.erased[region_key]
-		and not region:has_effect_bundle(MARKER_KEY) then
+		and not region:has_effect_bundle(MARKER_KEY)
+		and not (FILE_LOG and ((has_reason and reason == "abandoned") or has_icon)) then
 		return
 	end
 	local owner = owner_name(region)
 	if self.persistent.watched[region_key] then
 		self.persistent.watched[region_key] = owner
 	end
-	local has_reason, reason = pcall(function() return context:reason() end)
 	log("owner change at " .. region_key .. ": "
 		.. faction_name(function() return context:previous_faction() end) .. " -> " .. owner
 		.. ", reason " .. (has_reason and tostring(reason) or "?")
 		.. (self.persistent.erased[region_key] and ", erased" or ", not erased")
 		.. (region:has_effect_bundle(BUNDLE_KEY) and ", blocked" or ", NOT blocked")
 		.. (region:has_effect_bundle(MARKER_KEY) and ", marked" or ", not marked")
+		.. (has_icon and ", invasion icon" or "")
 		.. ", " .. self:armies_near(owner, region) .. " of its armies near")
+end
+
+-- Debug build: every raze, before any of our listeners act on it.
+function permraze:log_raze_event(context)
+	local faction = context:character():faction()
+	local region = context:garrison_residence():region()
+	local culture = "?"
+	local real = cm:get_faction(faction:name())
+	if real and not real:is_null_interface() then
+		culture = real:culture()
+	end
+	log("raze event at " .. region:name() .. " by " .. faction:name() .. " (" .. tostring(culture)
+		.. (faction:is_human() and ", human" or ", AI") .. ")"
+		.. ", in ruins already " .. tostring(region:is_abandoned())
+		.. (region:has_effect_bundle(INVASION_RUIN_BUNDLE) and ", invasion icon" or ", no invasion icon")
+		.. ", invasion stage " .. tostring(self:invasion_stage()) .. ", spawned " .. tostring(self:invasion_spawned()))
+end
+
+-- One line per province: every region, its ruins by province and by event area, and whether we scorched it.
+function permraze:province_line(province)
+	local parts, ruins = {}, 0
+	local regions = province:regions()
+	for i = 0, regions:num_items() - 1 do
+		local region = regions:item_at(i)
+		local key = region:name()
+		local state
+		if self.persistent.erased[key] then
+			state = "erased"
+		elseif region:is_abandoned() then
+			state = "ruin"
+		else
+			state = "owned by " .. owner_name(region)
+		end
+		if region:is_abandoned() then
+			ruins = ruins + 1
+		end
+		parts[#parts + 1] = key .. " " .. state
+			.. (region:has_effect_bundle(INVASION_RUIN_BUNDLE) and " +icon" or "")
+			.. (region:has_effect_bundle(BUNDLE_KEY) and " +block" or "")
+	end
+	-- The invasion's 50% rule counts the regions of the event area, which need not be the province.
+	local event_ok, event_text = pcall(function()
+		local capital_region = province:capital_region()
+		local area_regions = capital_region:regions_in_same_event_area()
+		local in_ruins = 0
+		for i = 0, area_regions:num_items() - 1 do
+			if area_regions:item_at(i):is_abandoned() then
+				in_ruins = in_ruins + 1
+			end
+		end
+		return tostring(capital_region:event_area_name()) .. " " .. in_ruins .. " of " .. area_regions:num_items() .. " in ruins"
+	end)
+	-- No wasteland column: the game's area check returns nothing, and the devastation manager's
+	-- data is not loaded yet when the report runs on load. The map shows the wasteland.
+	return "province " .. province:key() .. ": " .. ruins .. " of " .. regions:num_items() .. " in ruins"
+		.. ", event area " .. (event_ok and event_text or "?")
+		.. ", scorched by us " .. tostring(self.persistent.devastated_provinces[province:key()] == true)
+		.. " [" .. table.concat(parts, "; ") .. "]"
+end
+
+-- Debug build: every province holding erased ruins or invasion ruins.
+function permraze:log_provinces(tag)
+	if not FILE_LOG then
+		return
+	end
+	local ok, err = pcall(function()
+		local provinces, keys = {}, {}
+		local regions = cm:model():world():region_manager():region_list()
+		for i = 0, regions:num_items() - 1 do
+			local region = regions:item_at(i)
+			if self.persistent.erased[region:name()] or region:has_effect_bundle(INVASION_RUIN_BUNDLE) then
+				local province = region:province()
+				if not provinces[province:key()] then
+					provinces[province:key()] = province
+					keys[#keys + 1] = province:key()
+				end
+			end
+		end
+		table.sort(keys)
+		log("provinces " .. tag .. ": " .. #keys .. " with erased or invasion ruins")
+		for _, key in ipairs(keys) do
+			log("  " .. self:province_line(provinces[key]))
+		end
+	end)
+	if not ok then
+		log("province report failed: " .. tostring(err))
+	end
 end
 
 function permraze:rebuild(region_key)
@@ -565,6 +848,13 @@ function permraze:erase_and_devastate(region_key, faction_key)
 		turn = cm:model():turn_number(),
 	}
 	log("erased " .. region_key)
+
+	-- During the invasion its script paints provinces; painting first would keep it from doing so.
+	if self:invasion_active() then
+		log("province of " .. region_key .. " left to the Chaos Invasion's script")
+		self:hand_to_invasion(region_key)
+		return
+	end
 
 	local faction = cm:get_faction(faction_key)
 	if not faction or faction:is_null_interface() then
@@ -679,6 +969,29 @@ function permraze:look_for(culture_key)
 end
 
 function permraze:init()
+	-- First, so it logs the raze before our other listeners act on it.
+	if FILE_LOG then
+		-- Every faction's turn: the last line before a crash names the turn it happened in.
+		listen("permraze_debug_turn_start", "FactionTurnStart",
+			true,
+			function(context)
+				log("turn start of " .. context:faction():name())
+			end
+		)
+		listen("permraze_debug_turn_end", "FactionTurnEnd",
+			true,
+			function(context)
+				log("turn end of " .. context:faction():name())
+			end
+		)
+		listen("permraze_debug_razed", "CharacterRazedSettlement",
+			true,
+			function(context)
+				self:log_raze_event(context)
+			end
+		)
+	end
+
 	listen("permraze_occupation_decision", "CharacterPerformsSettlementOccupationDecision",
 		true,
 		function(context)
@@ -734,6 +1047,7 @@ function permraze:init()
 		true,
 		function(context)
 			if context:faction():is_human() then
+				self:reveal_map()
 				self:refresh_stale_corruption()
 				self:sync_blocks()
 			else
@@ -762,6 +1076,10 @@ function permraze:init()
 				log("owner change log failed: " .. tostring(err))
 			end
 			self:on_region_changed(context:region():name())
+			local has_reason, reason = pcall(function() return context:reason() end)
+			if has_reason then
+				self:on_region_abandoned(context:region():name(), reason)
+			end
 		end
 	)
 
@@ -769,6 +1087,17 @@ function permraze:init()
 		true,
 		function()
 			log("MCT settings changed: " .. self:settings_text())
+			if FILE_LOG then
+				-- After the panel closes: the invasion begins with a movie and fades.
+				cm:callback(function()
+					local ok, err = pcall(function()
+						self:debug_start_invasion()
+					end)
+					if not ok then
+						log("debug start failed: " .. tostring(err))
+					end
+				end, 0.5)
+			end
 			if not self:rebuild_allowed() then
 				self:restore_blocks()
 			end
@@ -794,6 +1123,8 @@ function permraze:init()
 	self:mark_erased()
 	self:refresh_corruption()
 	self:log_state()
+	self:log_provinces("on load")
+	self:reveal_map()
 end
 
 function permraze:settings_text()
@@ -813,10 +1144,10 @@ function permraze:settings_text()
 end
 
 -- One line per erased ruin on load, to tell lost state from a ruin that lost its block.
-function permraze:log_state()
+function permraze:log_state(tag)
 	local ok, err = pcall(function()
 		local keys = sorted_keys(self.persistent.erased)
-		log("loaded, " .. #keys .. " erased ruins, " .. #sorted_keys(self.persistent.watched) .. " razed regions watched, "
+		log((tag or "loaded") .. ", " .. #keys .. " erased ruins, " .. #sorted_keys(self.persistent.watched) .. " razed regions watched, "
 			.. #sorted_keys(self.persistent.devastated_provinces) .. " scorched provinces; settings " .. self:settings_text())
 		for _, region_key in ipairs(keys) do
 			local region = cm:get_region(region_key)

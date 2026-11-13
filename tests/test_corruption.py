@@ -31,8 +31,9 @@ def test_sliders_cover_numeric_defaults():
     assert SETTINGS_DEFAULTS["daemon_follow_god"] is False
     assert SETTINGS_DEFAULTS["allow_rebuild"] is False
     assert SETTINGS_DEFAULTS["ai_erase"] is False
+    assert SETTINGS_DEFAULTS["invasion_erase"] is False
     assert SLIDERS["ai_erase_chance"] == (1, 100, 1)
-    assert len(SETTINGS_DEFAULTS) == 9
+    assert len(SETTINGS_DEFAULTS) == 10
 
 
 def test_mct_texts_have_both_languages():

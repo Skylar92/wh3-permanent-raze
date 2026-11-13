@@ -43,6 +43,7 @@ SETTINGS_DEFAULTS = {
     "allow_rebuild": False,
     "ai_erase": False,
     "ai_erase_chance": 25,
+    "invasion_erase": False,
     "mode": "off",
     "ruin_strength": 5,
     "province_strength": 30,
@@ -100,6 +101,15 @@ MCT_TEXTS = {
                           "The AI never can.",
                           "В ваш ход армия в регионе руин или рядом может колонизировать их как обычно. "
                           "ИИ не может никогда."),
+    "section_endtimes": ("End Times", "Конец времён"),
+    "invasion_erase_label": ("Chaos Invasion erases ruins forever", "Вторжение Хаоса стирает руины навсегда"),
+    "invasion_erase_tip": ("During Archaon's End Times invasion every settlement the invasion razes is erased "
+                           "forever, the ones razed as it begins too. Works without the AI erasing option above. "
+                           "With \"Players can rebuild erased ruins\" only you can resettle them afterwards.",
+                           "Во время вторжения Архаона в Конце времён каждое поселение, разорённое вторжением, "
+                           "стирается навсегда, включая разорённые при его начале. Работает без опции стирания ИИ "
+                           "выше. С опцией «Игрок может восстанавливать стёртые руины» потом заселить их сможете "
+                           "только вы."),
     "ai_erase_label": ("The AI erases ruins forever too", "ИИ тоже стирает руины навсегда"),
     "ai_erase_tip": ("Every settlement the AI razes may be erased forever, by the chances below. "
                      "Warning: the result may be insane, pure chaos. Chaos and Beastmen will love it; "

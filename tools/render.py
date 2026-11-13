@@ -73,9 +73,10 @@ def render_corruption_script(template):
 UNTAINTED_KEY = "uied_component_texts_localised_string_region_corruption_untainted_Tooltip_40058"
 
 
-def render_mct_settings(template):
-    """Fill every placeholder of the MCT settings template."""
+def render_mct_settings(template, debug=False):
+    """Fill every placeholder of the MCT settings template; debug adds the test-only options."""
     return fill_placeholders(template, {
+        "DEBUG": bool(debug),
         "DEFAULTS": SETTINGS_DEFAULTS,
         "SLIDERS": SLIDERS,
         "CULTURES": list(CULTURE_DEFAULTS),

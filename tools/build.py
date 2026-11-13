@@ -61,7 +61,7 @@ def build(out_path, file_log=False):
     files[SCRIPT_PATH] = render_script(template, ids, devastation_looks(table(CULTURES)),
                                        clone_sources(vanilla_options), file_log).encode("utf-8")
     files[CORRUPTION_PATH] = render_corruption_script(corruption).encode("utf-8")
-    files[MCT_PATH] = render_mct_settings(mct).encode("utf-8")
+    files[MCT_PATH] = render_mct_settings(mct, file_log).encode("utf-8")
     write_pack(out_path, files)
     return files
 

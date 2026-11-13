@@ -47,6 +47,13 @@ make_region = function(key)
 		settlement = function() return { region_key = key } end,
 		province = function() return make_province(REGION_PROVINCE[key]) end,
 		event_area_name = function() return REGION_AREA[key] end,
+		regions_in_same_event_area = function()
+			local items = {}
+			for rk, area in pairs(REGION_AREA) do
+				if area == REGION_AREA[key] and (area ~= "" or rk == key) then items[#items + 1] = make_region(rk) end
+			end
+			return list(items)
+		end,
 		owning_faction = function() return make_faction(OWNERS[key] or HUMANS[1]) end,
 		has_effect_bundle = function(_, k) return (REGION_BUNDLES[key] or {})[k] == true end,
 		adjacent_region_list = function()
@@ -73,6 +80,7 @@ local FACTIONS = {
 	wh2_dlc09_tmb_exiles_of_nehek = { culture = "wh2_dlc09_tmb_tomb_kings" },
 	wh_main_dwf_dwarfs = { culture = "wh_main_dwf_dwarfs" },
 	nagash_legions = { culture = "wh3_dlc29_nag_undead_legions" },
+	wh3_dlc29_chaos_invasion_confederation_owner = { culture = "wh_main_chs_chaos" },
 }
 
 local function null_interface() return { is_null_interface = function() return true end } end
@@ -115,7 +123,29 @@ SAVED_VALUES = {}
 
 cm = {}
 TURN = 1
-function cm:model() return { turn_number = function() return TURN end } end
+ALL_REGIONS = {"r1", "r2", "r3", "r9"}
+function cm:model()
+	return {
+		turn_number = function() return TURN end,
+		world = function()
+			return { region_manager = function()
+				return { region_list = function()
+					local items = {}
+					for _, rk in ipairs(ALL_REGIONS) do items[#items + 1] = make_region(rk) end
+					return list(items)
+				end }
+			end }
+		end,
+	}
+end
+-- Real-time callbacks wait in PENDING until run_callbacks().
+PENDING = {}
+function cm:callback(f, t) PENDING[#PENDING + 1] = f end
+function run_callbacks()
+	local pending = PENDING
+	PENDING = {}
+	for _, f in ipairs(pending) do f() end
+end
 function cm:get_saved_value(k) return SAVED_VALUES[k] end
 function cm:get_region(key) return make_region(key) end
 function cm:get_faction(key) return make_faction(key) end
@@ -154,6 +184,8 @@ function cm:is_campaign_map_event_area_activated_in_region(rk) return ACTIVE_ARE
 function cm:activate_campaign_map_event_area(a, c) rec("activate_campaign_map_event_area", a, c); ACTIVE_AREAS[a] = true end
 function cm:deactivate_campaign_map_event_area(a) rec("deactivate_campaign_map_event_area", a); ACTIVE_AREAS[a] = nil end
 function cm:kill_character(...) rec("kill_character") end
+function cm:show_shroud(v) rec("show_shroud", v) end
+function cm:make_region_visible_in_shroud(f, r) rec("make_region_visible_in_shroud", f, r) end
 function cm:override_settlement_climate(...) rec("override_settlement_climate") end
 function cm:add_first_tick_callback(f) FIRST_TICK[#FIRST_TICK + 1] = f end
 function cm:add_saving_game_callback(f) SAVE_CALLBACKS[#SAVE_CALLBACKS + 1] = f end

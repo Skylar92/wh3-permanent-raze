@@ -486,9 +486,11 @@ def test_load_logs_every_erased_ruin(g):
     g.REGION_BUNDLES["r2"] = None
     g.OUT = g.lua.table()
     first_tick(g)
-    assert logged(g)[-3:] == [
+    lines = logged(g)
+    start = next(i for i, s in enumerate(lines) if s.startswith("loaded, "))
+    assert lines[start:start + 3] == [
         "loaded, 2 erased ruins, 2 razed regions watched, 0 scorched provinces; settings ai_erase=false ai_erase_chance=25 allow_rebuild=false "
-        "daemon_follow_god=false mode=off multiplier=100 province_strength=30 ruin_strength=5 threshold=50",
+        "daemon_follow_god=false invasion_erase=false mode=off multiplier=100 province_strength=30 ruin_strength=5 threshold=50",
         "  r1 abandoned, blocked, marked",
         "  r2 owned by wh2_dlc09_tmb_exiles_of_nehek, NOT blocked, marked",
     ]

@@ -1,5 +1,5 @@
 -- MCT settings for Raze Forever. The placeholders are filled in by tools/render.py at build time.
--- Three pages: General (rebuild), AI erasing (switch, general and per-culture chance),
+-- Three pages: General (rebuild), AI erasing (switch, general chance, Chaos Invasion, per-culture chance),
 -- Corruption (mode and everything it uses). Options the current choices make pointless are locked.
 if not get_mct then return end
 
@@ -13,6 +13,7 @@ local UNTAINTED_KEY = {} --@@UNTAINTED_KEY@@
 local TEXTS = {} --@@TEXTS@@
 local RU_PROBE = {} --@@RU_PROBE@@
 local AI_CHANCE = {} --@@AI_CHANCE@@
+local DEBUG = {} --@@DEBUG@@
 
 local ru = common.get_localised_string(RU_PROBE[1]) == RU_PROBE[2]
 
@@ -83,6 +84,24 @@ add_section("general", "general")
 local rebuild = add_option("allow_rebuild", "checkbox")
 rebuild:set_default_value(DEFAULTS.allow_rebuild)
 
+-- Debug build only (build.py --log): test helpers, never in a release.
+if DEBUG then
+    local section = mod:add_new_section("debug", "Debug build")
+    if pages.general and section and section.assign_to_page then
+        section:assign_to_page(pages.general)
+    end
+    local start = mod:add_new_option("debug_start_invasion", "checkbox")
+    start:set_text("Start the Chaos Invasion now")
+    start:set_tooltip_text("Tick and apply: Archaon's End Times invasion begins right away, skipping its two "
+        .. "10-turn warnings. Needs a campaign with the End Times Chaos Invasion on and Archaon played by the AI.")
+    start:set_default_value(false)
+    local reveal = mod:add_new_option("debug_reveal_map", "checkbox")
+    reveal:set_text("Lift the fog of war")
+    reveal:set_tooltip_text("Shows the whole map to the players while testing. Off by default: it runs at "
+        .. "the start of your turn.")
+    reveal:set_default_value(false)
+end
+
 -- AI erasing page
 
 add_section("ai", "ai")
@@ -91,6 +110,11 @@ local ai_erase = add_option("ai_erase", "checkbox")
 ai_erase:set_default_value(DEFAULTS.ai_erase)
 
 add_setting_slider("ai_erase_chance")
+
+add_section("endtimes", "ai")
+
+local invasion = add_option("invasion_erase", "checkbox")
+invasion:set_default_value(DEFAULTS.invasion_erase)
 
 add_section("ai_cultures", "ai")
 

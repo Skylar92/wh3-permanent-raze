@@ -100,7 +100,7 @@ CORRUPTION_LOCKED = ["ruin_strength", "province_strength", "multiplier", "thresh
                      "daemon_follow_god"] + CORRUPTION_CULTURE_KEYS
 
 
-def load(russian=False, pages=True, selected=None):
+def load(russian=False, pages=True, selected=None, debug=False):
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(FAKE_MCT)
     g = lua.globals()
@@ -108,7 +108,7 @@ def load(russian=False, pages=True, selected=None):
     g.LOC = lua.table_from({RU_PROBE[0]: RU_PROBE[1]} if russian else {})
     for key, value in (selected or {}).items():
         g.SELECTED[key] = value
-    lua.execute(render_mct_settings(TEMPLATE))
+    lua.execute(render_mct_settings(TEMPLATE, debug))
     return lua, g.LOG.mods["permraze"]
 
 
@@ -144,7 +144,7 @@ def test_registers_permraze(mod):
     assert mod.set_author == "Skylar92"
     assert mod.set_workshop_id == "3820765666"
     assert mod.set_title == MCT_TEXTS["mod_title"][0]
-    assert [s.key for s in py(mod.sections)] == ["general", "ai", "ai_cultures", "corruption", "cultures"]
+    assert [s.key for s in py(mod.sections)] == ["general", "ai", "endtimes", "ai_cultures", "corruption", "cultures"]
 
 
 def test_three_pages_replace_the_default_one(mod):
@@ -157,7 +157,7 @@ def test_three_pages_replace_the_default_one(mod):
 def test_sections_on_their_pages(mod):
     page_of = {s.key: s.page.title for s in py(mod.sections)}
     general, ai, corruption = (MCT_TEXTS[k][0] for k in ("page_general", "page_ai", "page_corruption"))
-    assert page_of == {"general": general, "ai": ai, "ai_cultures": ai, "corruption": corruption,
+    assert page_of == {"general": general, "ai": ai, "endtimes": ai, "ai_cultures": ai, "corruption": corruption,
                        "cultures": corruption}
 
 
@@ -165,8 +165,9 @@ def test_options_in_their_sections(mod):
     section = {k: opt(mod, k).section for k in mod.order.values()}
     assert section["allow_rebuild"] == "general"
     assert section["ai_erase"] == section["ai_erase_chance"] == "ai"
+    assert section["invasion_erase"] == "endtimes"
     order = list(mod.order.values())
-    assert order[:3] == ["allow_rebuild", "ai_erase", "ai_erase_chance"]
+    assert order[:4] == ["allow_rebuild", "ai_erase", "ai_erase_chance", "invasion_erase"]
     for key in ["mode", "ruin_strength", "province_strength", "multiplier", "threshold", "daemon_follow_god"]:
         assert section[key] == "corruption", key
     for key in AI_CULTURE_KEYS:
@@ -177,12 +178,13 @@ def test_options_in_their_sections(mod):
 
 def test_old_mct_without_pages_still_registers_everything():
     _, mod = load(pages=False)
-    assert [s.key for s in py(mod.sections)] == ["general", "ai", "ai_cultures", "corruption", "cultures"]
+    assert [s.key for s in py(mod.sections)] == ["general", "ai", "endtimes", "ai_cultures", "corruption", "cultures"]
     assert set(mod.order.values()) == set(campaign_defaults())
 
 
 def test_general_options_match_defaults(mod):
-    types = {"mode": "dropdown", "daemon_follow_god": "checkbox", "allow_rebuild": "checkbox", "ai_erase": "checkbox"}
+    types = {"mode": "dropdown", "daemon_follow_god": "checkbox", "allow_rebuild": "checkbox", "ai_erase": "checkbox",
+             "invasion_erase": "checkbox"}
     for key, default in SETTINGS_DEFAULTS.items():
         o = opt(mod, key)
         assert o.type == types.get(key, "slider"), key
@@ -238,7 +240,8 @@ def test_texts_english_by_default(mod):
     assert mod.set_title == MCT_TEXTS["mod_title"][0]
     assert opt(mod, "mode").set_text[1] == MCT_TEXTS["mode_label"][0]
     assert opt(mod, "mode").set_tooltip_text[1] == MCT_TEXTS["mode_tip"][0]
-    assert mod.sections[5].name == MCT_TEXTS["section_cultures"][0]
+    assert mod.sections[6].name == MCT_TEXTS["section_cultures"][0]
+    assert mod.sections[3].name == MCT_TEXTS["section_endtimes"][0]
 
 
 def test_texts_russian_when_probe_matches():
@@ -320,3 +323,18 @@ def test_panel_opened_reapplies_locks(loaded):
     lua.globals().SELECTED["ai_erase"] = True
     listener.cb(None)
     assert not locked(mod) & set(AI_LOCKED)
+
+
+def test_release_has_no_debug_options(mod):
+    assert "debug_start_invasion" not in set(mod.order.values())
+    assert "debug" not in [s.key for s in py(mod.sections)]
+
+
+def test_debug_build_adds_start_invasion_box():
+    _, mod = load(debug=True)
+    o = opt(mod, "debug_start_invasion")
+    assert o.type == "checkbox" and o.set_default_value[1] is False
+    assert o.section == "debug"
+    assert [s.key for s in py(mod.sections)][:2] == ["general", "debug"]
+    reveal = opt(mod, "debug_reveal_map")
+    assert reveal.type == "checkbox" and reveal.set_default_value[1] is False and reveal.section == "debug"
