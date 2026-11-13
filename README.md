@@ -21,7 +21,7 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 234 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 299 automated tests (pack/db encoding, generated options, the campaign script) |
 
 ## Features
 
@@ -59,6 +59,16 @@ Off by default. Tick **The AI erases ruins forever too** on the **AI erasing** p
 - With rebuilding on, you can rebuild ruins the AI erased too, so a settlement a mission needs is not lost for good.
 - Nagash's Undead Legions are left out, as they have no Raze Forever button.
 - Fair warning: with a high chance, Chaos, Beastmen and friends can turn half the map into ruins nobody can settle. The result may be insane.
+
+## Optional: the Chaos Invasion erases its ruins (MCT)
+
+Off by default. Tick **Chaos Invasion erases ruins forever** in the **End Times** section of the **AI erasing** page, and every settlement Archaon's End Times invasion razes is erased forever, so it stays in ruins after the End Times are over.
+
+- Every raze by the invasion's armies is erased, with no roll. It works on its own: AI erasing does not need to be on.
+- The settlements the invasion razes the moment it begins (the old Chaos lands and its landing points) are erased too.
+- While the invasion runs, its own script keeps scorching the land: the small devastation icon on every razed settlement and the wasteland once more than half of a province is razed, erased ruins included.
+- When the End Times end, the game makes its ruins settleable again; erased ones stay blocked. With **Players can rebuild erased ruins** on, only you can resettle them.
+- Other factions' razes during the invasion are not affected; they follow the AI erasing settings as usual.
 
 ## Optional: corruption settings (MCT)
 
