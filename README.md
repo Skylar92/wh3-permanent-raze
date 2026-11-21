@@ -21,7 +21,7 @@
 | **Cultures** | all, except Nagash's Undead Legions |
 | **Languages** | every game language |
 | **Save-game** | safe to add mid-campaign, do not remove mid-campaign |
-| **Tests** | 299 automated tests (pack/db encoding, generated options, the campaign script) |
+| **Tests** | 328 automated tests (pack/db encoding, generated options, the campaign script) |
 
 ## Features
 
@@ -47,6 +47,15 @@ Off by default. With the [Mod Configuration Tool](https://steamcommunity.com/sha
 - A rebuilt settlement loses the devastated look and its corruption. The scorched land goes once no more than half of the province is in ruins. It can be erased again.
 - The big burning icon on the settlement label is drawn by the game only while you cannot occupy the ruins, so it goes out where an army can rebuild; the small Scorched Earth icon next to the name stays.
 
+## Optional: Raze Forever by chance, with a cooldown (MCT)
+
+Both on the **General** page; by default Raze Forever always erases and nothing else changes.
+
+- **Raze Forever chance, %:** 100% by default (0–100%). Below 100%, your Raze Forever erases the ruins only when the roll succeeds; otherwise the settlement is only razed. At 0% it never erases.
+- **Cooldown after a raze, turns:** 0 by default (0–50). When an erase forever fails its roll (your Raze Forever under the chance above, or an AI raze under AI erasing), the ruins cannot be colonised for that many turns.
+- The cooldown works like the game's own block after a Khorne or Norsca raze: a burning icon with the turns left appears next to the ruins' name, and the game lifts the block by itself when the count runs out. The ruins then become ordinary ruins anyone can colonise.
+- Ordinary razes are never affected. Erasing ruins that are under a cooldown takes the cooldown off.
+
 ## Optional: the AI erases ruins too (MCT)
 
 Off by default. Tick **The AI erases ruins forever too** on the **AI erasing** page and every settlement the AI razes may be erased forever. The chances below it stay locked until the box is ticked:
@@ -55,7 +64,8 @@ Off by default. Tick **The AI erases ruins forever too** on the **AI erasing** p
 - **By culture:** one dropdown per culture: **General** (default) or 0–100% in steps of 5. General uses the general chance, 0% means that culture never erases, any other value is its own chance. For example, set Chaos to 40%, Beastmen to 60% and everyone else to 0 for a lore-friendly map where only the destroyers burn the land for good.
 
 - The AI cannot choose Raze Forever on purpose, so the chance is rolled on each of its razes. Erased ruins are blocked, marked and scorched exactly as yours are, and count toward corruption by the culture of the faction that erased them.
-- Your own Raze Forever works as before; the chance never applies to human players.
+- If the roll fails, the ruins are only razed, with the cooldown if one is set (see above).
+- Your own Raze Forever has its own chance on the General page; the AI chances never apply to human players.
 - With rebuilding on, you can rebuild ruins the AI erased too, so a settlement a mission needs is not lost for good.
 - Nagash's Undead Legions are left out, as they have no Raze Forever button.
 - Fair warning: with a high chance, Chaos, Beastmen and friends can turn half the map into ruins nobody can settle. The result may be insane.
