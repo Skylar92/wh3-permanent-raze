@@ -1,6 +1,6 @@
 import pytest
 
-from tools.generate import (BUNDLE_KEY, EFFECT_KEY, MARKER_BUNDLE_KEY, NO_SPREAD_EFFECT_KEY, PROVINCE_BUNDLE_KEY,
+from tools.generate import (BUNDLE_KEY, COOLDOWN_BUNDLE_KEY, EFFECT_KEY, MARKER_BUNDLE_KEY, NO_SPREAD_EFFECT_KEY, PROVINCE_BUNDLE_KEY,
                             RUIN_BUNDLE_KEY, devastation_looks, make_bundle_tables, make_corruption_bundles,
                             make_effect_tables, make_loc, make_scripted_bonus_table)
 from tools.texts import VANILLA_TEXTS
@@ -10,13 +10,16 @@ from tools.texts import VANILLA_TEXTS
 def test_bundle_clone(vanilla_bundles, vanilla_junctions):
     b, j = make_bundle_tables(vanilla_bundles, vanilla_junctions)
     assert BUNDLE_KEY == "permraze_block_occupation"
-    assert [r[b.col("key")] for r in b.rows] == [BUNDLE_KEY, MARKER_BUNDLE_KEY, RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY]
+    assert [r[b.col("key")] for r in b.rows] == [BUNDLE_KEY, MARKER_BUNDLE_KEY, COOLDOWN_BUNDLE_KEY, RUIN_BUNDLE_KEY,
+                                                 PROVINCE_BUNDLE_KEY]
     assert b.rows[0][b.col("bundle_target")] == "region"
     assert b.rows[0][b.col("localised_title")] == "{{tr:effect_bundles_localised_title_wh3_dlc26_block_occupation_beastmen}}"
     assert [(r[j.col("effect_bundle_key")], r[j.col("effect_key")], r[j.col("effect_scope")], r[j.col("value")])
             for r in j.rows] == [
         ("permraze_block_occupation", "permraze_effect_block_occupation", "region_to_region_own", 1),
         ("permraze_erased_marker", "permraze_effect_no_ruin_spread", "region_to_region_own", -1000),
+        ("permraze_cooldown_block", "permraze_effect_block_occupation", "region_to_region_own", 1),
+        ("permraze_cooldown_block", "permraze_effect_no_ruin_spread", "region_to_region_own", -1000),
     ]
 
 
@@ -99,3 +102,22 @@ def test_loc_has_corruption_bundle_titles():
     loc = dict(make_loc([2100500000]))
     for key in (RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY):
         assert loc["effect_bundles_localised_title_" + key] == VANILLA_TEXTS["title"]
+
+@pytest.mark.game
+def test_cooldown_bundle_looks_like_khornes(vanilla_bundles, vanilla_junctions):
+    """The cooldown copies the block the game puts on after a Khorne raze: same icon, shown on the map,
+    so the game draws its burning icon with the turns left."""
+    assert COOLDOWN_BUNDLE_KEY == "permraze_cooldown_block"
+    b, _ = make_bundle_tables(vanilla_bundles, vanilla_junctions)
+    cooldown = next(r for r in b.rows if r[b.col("key")] == COOLDOWN_BUNDLE_KEY)
+    khorne = next(r for r in vanilla_bundles.rows
+                  if r[vanilla_bundles.col("key")] == "wh3_dlc26_block_occupation_khorne")
+    for name in ("ui_icon", "show_in_3d_space", "owner_only", "bundle_target"):
+        assert cooldown[b.col(name)] == khorne[vanilla_bundles.col(name)], name
+    assert cooldown[b.col("localised_title")] == VANILLA_TEXTS["bundle_title"]
+
+
+def test_loc_has_cooldown_texts():
+    loc = dict(make_loc([2100500000]))
+    assert loc["effect_bundles_localised_title_" + COOLDOWN_BUNDLE_KEY] == VANILLA_TEXTS["bundle_title"]
+    assert loc["effect_bundles_localised_description_" + COOLDOWN_BUNDLE_KEY] == VANILLA_TEXTS["bundle_description"]

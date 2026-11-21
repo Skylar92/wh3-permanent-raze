@@ -84,6 +84,9 @@ add_section("general", "general")
 local rebuild = add_option("allow_rebuild", "checkbox")
 rebuild:set_default_value(DEFAULTS.allow_rebuild)
 
+add_setting_slider("raze_forever_chance")
+add_setting_slider("raze_cooldown")
+
 -- Debug build only (build.py --log): test helpers, never in a release.
 if DEBUG then
     local section = mod:add_new_section("debug", "Debug build")

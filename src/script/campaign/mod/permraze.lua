@@ -34,6 +34,15 @@
 --	the same way a player's erase does. Corruption of these ruins is rebuilt
 --	once at round start or on a human turn, not after every AI raze.
 --
+--	Cooldown (MCT option, 0 turns by default): an attempt to erase forever
+--	that fails its roll blocks the ruins for that many turns instead: an AI
+--	raze under AI erasing, or a player's Raze Forever under its own chance
+--	(MCT, 100% by default: it always erases).
+--	It is the same block put on with a duration, as the game does after a
+--	Khorne or Norsca raze, so the game draws its burning icon with the turns
+--	left and lifts it by itself; nothing runs at the start of a turn. Ordinary
+--	vanilla razes are left alone.
+--
 --	Chaos Invasion (End Times, MCT option, off by default): every raze by
 --	Archaon's invasion faction erases the ruins without a roll, and so do the
 --	regions its script razes when it begins (no raze event comes for them;
@@ -62,6 +71,7 @@ local REBUILT_STATE = "none"
 local SAVE_KEY = "permraze"
 local ASCEND_PREFIX = "wh3_main_ritual_dae_ascend_"
 local INVASION_FACTION = "wh3_dlc29_chaos_invasion_confederation_owner"
+local COOLDOWN_KEY = "permraze_cooldown_block"
 local INVASION_RUIN_BUNDLE = "wh3_dlc29_episodes_chaos_invasion_devastated_region"
 
 local function new_state()
@@ -153,7 +163,7 @@ function permraze:on_decision(option_id, is_human, region_key, faction_key)
 	self.persistent.watched[region_key] = self.persistent.watched[region_key] or "unknown"
 	if self.persistent.razed[region_key] then
 		self.persistent.razed[region_key] = nil
-		self:erase_region(region_key, faction_key)
+		self:raze_forever(region_key, faction_key)
 	else
 		self.persistent.pending[region_key] = faction_key
 	end
@@ -217,10 +227,61 @@ function permraze:on_razed(region_key, faction_key)
 	local pending_faction = self.persistent.pending[region_key]
 	if pending_faction then
 		self.persistent.pending[region_key] = nil
-		self:erase_region(region_key, pending_faction)
+		self:raze_forever(region_key, pending_faction)
 	elseif not vanilla_decided[region_key] then
 		self.persistent.razed[region_key] = faction_key
 	end
+end
+
+-- A player's Raze Forever: erases by its own chance (100% by default, no roll);
+-- a failed roll leaves ordinary ruins under the cooldown.
+function permraze:raze_forever(region_key, faction_key)
+	local chance = self:player_erase_chance()
+	if chance == nil then
+		self:erase_region(region_key, faction_key)
+		return
+	end
+	local roll = cm:random_number(100)
+	if roll <= chance then
+		log("Raze Forever of " .. region_key .. " by " .. faction_key .. " erased: rolled " .. roll .. ", chance " .. chance)
+		self:erase_region(region_key, faction_key)
+		return
+	end
+	log("Raze Forever of " .. region_key .. " by " .. faction_key .. " failed: rolled " .. roll .. ", chance " .. chance)
+	self:apply_cooldown(region_key, faction_key)
+end
+
+-- Turns of the cooldown on ruins razed but not erased; 0 when the option is off or without MCT.
+function permraze:cooldown_turns()
+	local ok, settings = pcall(function()
+		return permraze_corruption:settings()
+	end)
+	if not ok or type(settings) ~= "table" or type(settings.raze_cooldown) ~= "number" then
+		return 0
+	end
+	return math.max(0, math.floor(settings.raze_cooldown))
+end
+
+-- The chance a player's Raze Forever rolls; nil when it always erases (100%, the default, or no MCT).
+function permraze:player_erase_chance()
+	local ok, settings = pcall(function()
+		return permraze_corruption:settings()
+	end)
+	if not ok or type(settings) ~= "table" or type(settings.raze_forever_chance) ~= "number"
+		or settings.raze_forever_chance >= 100 then
+		return nil
+	end
+	return settings.raze_forever_chance
+end
+
+-- The game counts the turns down and draws them on the burning icon, then lifts the block itself.
+function permraze:apply_cooldown(region_key, faction_key)
+	local turns = self:cooldown_turns()
+	if turns <= 0 or self.persistent.erased[region_key] then
+		return
+	end
+	cm:apply_effect_bundle_to_region(COOLDOWN_KEY, region_key, turns)
+	log("cooldown of " .. turns .. " turns on " .. region_key .. ", razed by " .. tostring(faction_key))
 end
 
 -- Set when the AI erased ruins since the last corruption refresh.
@@ -273,6 +334,7 @@ function permraze:on_ai_razed(region_key, faction_key)
 	local roll = cm:random_number(100)
 	if roll > chance then
 		log("AI raze of " .. region_key .. " by " .. faction_key .. " kept: rolled " .. roll .. ", chance " .. chance)
+		self:apply_cooldown(region_key, faction_key)
 		return
 	end
 	log("AI raze of " .. region_key .. " by " .. faction_key .. " erased: rolled " .. roll .. ", chance " .. chance)
@@ -714,6 +776,7 @@ function permraze:province_line(province)
 		parts[#parts + 1] = key .. " " .. state
 			.. (region:has_effect_bundle(INVASION_RUIN_BUNDLE) and " +icon" or "")
 			.. (region:has_effect_bundle(BUNDLE_KEY) and " +block" or "")
+			.. (region:has_effect_bundle(COOLDOWN_KEY) and " +cooldown" or "")
 	end
 	-- The invasion's 50% rule counts the regions of the event area, which need not be the province.
 	local event_ok, event_text = pcall(function()
@@ -745,7 +808,8 @@ function permraze:log_provinces(tag)
 		local regions = cm:model():world():region_manager():region_list()
 		for i = 0, regions:num_items() - 1 do
 			local region = regions:item_at(i)
-			if self.persistent.erased[region:name()] or region:has_effect_bundle(INVASION_RUIN_BUNDLE) then
+			if self.persistent.erased[region:name()] or region:has_effect_bundle(INVASION_RUIN_BUNDLE)
+				or region:has_effect_bundle(COOLDOWN_KEY) then
 				local province = region:province()
 				if not provinces[province:key()] then
 					provinces[province:key()] = province
@@ -754,7 +818,7 @@ function permraze:log_provinces(tag)
 			end
 		end
 		table.sort(keys)
-		log("provinces " .. tag .. ": " .. #keys .. " with erased or invasion ruins")
+		log("provinces " .. tag .. ": " .. #keys .. " with erased, invasion or cooling ruins")
 		for _, key in ipairs(keys) do
 			log("  " .. self:province_line(provinces[key]))
 		end
@@ -837,6 +901,10 @@ function permraze:seal(region_key)
 	cm:apply_effect_bundle_to_region(MARKER_KEY, region_key, 0)
 	cm:reset_settlement_type(settlement, SETTLEMENT_TYPE, 1)
 	cm:set_settlement_devastated_state(settlement, SETTLEMENT_STATE)
+	-- Erased for good: a cooldown left from an earlier raze would only show a countdown.
+	if cm:get_region(region_key):has_effect_bundle(COOLDOWN_KEY) then
+		cm:remove_effect_bundle_from_region(COOLDOWN_KEY, region_key)
+	end
 end
 
 function permraze:erase_and_devastate(region_key, faction_key)

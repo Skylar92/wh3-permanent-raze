@@ -414,7 +414,7 @@ def test_debug_log_tells_the_whole_invasion(gd):
         "[r1 erased +icon +block; r2 erased +icon +block; r3 ruin +icon]",
         "raze event at r3 by " + BEASTMEN + " (wh_dlc03_bst_beastmen, AI), in ruins already true",
         "loaded, 3 erased ruins",
-        "provinces on load: 2 with erased or invasion ruins",
+        "provinces on load: 2 with erased, invasion or cooling ruins",
     ]
     for line in expected:
         assert line in text, line

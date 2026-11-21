@@ -163,11 +163,12 @@ def test_sections_on_their_pages(mod):
 
 def test_options_in_their_sections(mod):
     section = {k: opt(mod, k).section for k in mod.order.values()}
-    assert section["allow_rebuild"] == "general"
+    assert section["allow_rebuild"] == section["raze_forever_chance"] == section["raze_cooldown"] == "general"
     assert section["ai_erase"] == section["ai_erase_chance"] == "ai"
     assert section["invasion_erase"] == "endtimes"
     order = list(mod.order.values())
-    assert order[:4] == ["allow_rebuild", "ai_erase", "ai_erase_chance", "invasion_erase"]
+    assert order[:6] == ["allow_rebuild", "raze_forever_chance", "raze_cooldown", "ai_erase", "ai_erase_chance",
+                         "invasion_erase"]
     for key in ["mode", "ruin_strength", "province_strength", "multiplier", "threshold", "daemon_follow_god"]:
         assert section[key] == "corruption", key
     for key in AI_CULTURE_KEYS:

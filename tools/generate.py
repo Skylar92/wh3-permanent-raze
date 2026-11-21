@@ -20,6 +20,9 @@ BUNDLE_KEY = "permraze_block_occupation"
 # Burning-ruins icon next to the settlement name, shown to everyone. The engine's own icon on the
 # label follows the block only for the viewing faction, so it goes out while a player may rebuild.
 MARKER_BUNDLE_KEY = "permraze_erased_marker"
+# The cooldown on ruins razed but not erased: the same block, put on by script for a number of turns,
+# so the game draws its own burning icon with the turns left, as after a Khorne or Norsca raze.
+COOLDOWN_BUNDLE_KEY = "permraze_cooldown_block"
 ARCHAON_EFFECT_KEY = "wh3_dlc29_effect_chs_archaon_block_occupation"
 EFFECT_KEY = "permraze_effect_block_occupation"
 # The marker's only effect, hidden: Khorne's settlements take over ruins in their province by script at round
@@ -96,7 +99,9 @@ def make_bundle_tables(bundles, junctions):
             marker[bundles.col("localised_description")] = ""
             marker[bundles.col("show_in_3d_space")] = True
             marker[bundles.col("owner_only")] = False
-            new_bundles.rows.extend([clone, marker])
+            cooldown = list(clone)
+            cooldown[bundles.col("key")] = COOLDOWN_BUNDLE_KEY
+            new_bundles.rows.extend([clone, marker, cooldown])
     new_bundles.rows.extend(make_corruption_bundles(bundles))
     for row in junctions.rows:
         if row[junctions.col("effect_bundle_key")] == ARCHAON_BUNDLE_KEY:
@@ -107,7 +112,12 @@ def make_bundle_tables(bundles, junctions):
             no_spread[junctions.col("effect_bundle_key")] = MARKER_BUNDLE_KEY
             no_spread[junctions.col("effect_key")] = NO_SPREAD_EFFECT_KEY
             no_spread[junctions.col("value")] = NO_SPREAD_VALUE
-            new_junctions.rows.extend([clone, no_spread])
+            # The cooldown blocks too and keeps Khorne's spread off the ruins, like an erased one.
+            cooldown_block = list(clone)
+            cooldown_block[junctions.col("effect_bundle_key")] = COOLDOWN_BUNDLE_KEY
+            cooldown_no_spread = list(no_spread)
+            cooldown_no_spread[junctions.col("effect_bundle_key")] = COOLDOWN_BUNDLE_KEY
+            new_junctions.rows.extend([clone, no_spread, cooldown_block, cooldown_no_spread])
     return new_bundles, new_junctions
 
 
@@ -164,6 +174,8 @@ def make_loc(option_ids):
     entries.append(("effect_bundles_localised_title_" + BUNDLE_KEY, texts["bundle_title"]))
     entries.append(("effect_bundles_localised_description_" + BUNDLE_KEY, texts["bundle_description"]))
     entries.append(("effect_bundles_localised_title_" + MARKER_BUNDLE_KEY, texts["marker_title"]))
+    entries.append(("effect_bundles_localised_title_" + COOLDOWN_BUNDLE_KEY, texts["bundle_title"]))
+    entries.append(("effect_bundles_localised_description_" + COOLDOWN_BUNDLE_KEY, texts["bundle_description"]))
     for key in (RUIN_BUNDLE_KEY, PROVINCE_BUNDLE_KEY):
         entries.append(("effect_bundles_localised_title_" + key, texts["title"]))
     entries.append(("effects_description_" + EFFECT_KEY, texts["effect_description"]))

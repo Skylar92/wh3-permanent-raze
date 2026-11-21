@@ -24,7 +24,8 @@ def test_overrides_valid():
 
 
 def test_sliders_cover_numeric_defaults():
-    assert set(SLIDERS) == {"ai_erase_chance", "ruin_strength", "province_strength", "multiplier", "threshold"}
+    assert set(SLIDERS) == {"ai_erase_chance", "raze_forever_chance", "raze_cooldown", "ruin_strength",
+                            "province_strength", "multiplier", "threshold"}
     for key, (lo, hi, step) in SLIDERS.items():
         assert lo <= SETTINGS_DEFAULTS[key] <= hi and step > 0
     assert SETTINGS_DEFAULTS["mode"] == "off"
@@ -32,8 +33,12 @@ def test_sliders_cover_numeric_defaults():
     assert SETTINGS_DEFAULTS["allow_rebuild"] is False
     assert SETTINGS_DEFAULTS["ai_erase"] is False
     assert SETTINGS_DEFAULTS["invasion_erase"] is False
+    assert SETTINGS_DEFAULTS["raze_forever_chance"] == 100
+    assert SLIDERS["raze_forever_chance"] == (0, 100, 1)
+    assert SETTINGS_DEFAULTS["raze_cooldown"] == 0
+    assert SLIDERS["raze_cooldown"] == (0, 50, 1)
     assert SLIDERS["ai_erase_chance"] == (1, 100, 1)
-    assert len(SETTINGS_DEFAULTS) == 10
+    assert len(SETTINGS_DEFAULTS) == 12
 
 
 def test_mct_texts_have_both_languages():

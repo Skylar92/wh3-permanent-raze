@@ -44,6 +44,8 @@ SETTINGS_DEFAULTS = {
     "ai_erase": False,
     "ai_erase_chance": 25,
     "invasion_erase": False,
+    "raze_forever_chance": 100,
+    "raze_cooldown": 0,
     "mode": "off",
     "ruin_strength": 5,
     "province_strength": 30,
@@ -61,6 +63,8 @@ AI_CHANCE_VALUES = (AI_CHANCE_DEFAULT,) + tuple(str(p) for p in range(0, 101, 5)
 # key: (min, max, step)
 SLIDERS = {
     "ai_erase_chance": (1, 100, 1),
+    "raze_forever_chance": (0, 100, 1),
+    "raze_cooldown": (0, 50, 1),
     "ruin_strength": (0, 30, 1),
     "province_strength": (0, 100, 1),
     "multiplier": (0, 300, 10),
@@ -101,6 +105,19 @@ MCT_TEXTS = {
                           "The AI never can.",
                           "В ваш ход армия в регионе руин или рядом может колонизировать их как обычно. "
                           "ИИ не может никогда."),
+    "raze_cooldown_label": ("Cooldown after a raze, turns", "Откат после разорения, ходов"),
+    "raze_forever_chance_label": ("Raze Forever chance, %", "Шанс «Стереть навсегда», %"),
+    "raze_forever_chance_tip": ("Chance that your Raze Forever erases the ruins forever. If the roll fails, the "
+                                "settlement is only razed, with the cooldown below if one is set. 100%: it always "
+                                "erases. 0%: it never does.",
+                                "Шанс, что ваше «Стереть навсегда» сотрёт руины навсегда. Если не выпало, поселение "
+                                "просто разорено, с откатом ниже, если он задан. 100%: стирает всегда. 0%: никогда."),
+    "raze_cooldown_tip": ("When an erase forever fails its roll (your Raze Forever under its chance above, or an AI "
+                          "raze under AI erasing), the ruins cannot be colonised for this many turns, like after a "
+                          "Khorne raze. Ordinary razes are not affected. 0: off.",
+                          "Когда стирание навсегда не выпало по шансу (ваше «Стереть навсегда» с шансом выше или "
+                          "разорение ИИ при стирании ИИ), руины нельзя колонизировать столько ходов, как после "
+                          "разорения Кхорна. Обычные разорения не затрагиваются. 0: выключено."),
     "section_endtimes": ("End Times", "Конец времён"),
     "invasion_erase_label": ("Chaos Invasion erases ruins forever", "Вторжение Хаоса стирает руины навсегда"),
     "invasion_erase_tip": ("During Archaon's End Times invasion every settlement the invasion razes is erased "
